@@ -3,6 +3,25 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 
 import { ENV } from "./env.server";
+import {
+  configureCache,
+  disconnectCache,
+  ensureCacheConnected,
+  getCacheProvider,
+  getCachedData,
+  invalidateCache,
+  isCacheReady,
+  pingCache,
+} from "@almanac/core/cache";
+
+// Configure cache provider
+// Local clone: CACHE_PROVIDER=memory (default, in-memory Map, no docker/redis needed)
+// Docker: set CACHE_PROVIDER=redis (or USE_REDIS=true) + REDIS_URL=redis://redis:6379
+configureCache({ url: ENV.REDIS_URL, provider: ENV.CACHE_PROVIDER });
+
+if (getCacheProvider() === "redis") {
+  ensureCacheConnected().catch((err) => console.warn("Redis initial connect failed - will retry lazily", err));
+}
 
 const app = new Hono();
 
@@ -18,5 +37,58 @@ app.use(
 app.get("/", (c) => {
   return c.text("OK");
 });
+
+app.get("/health", async (c) => {
+  const started = Date.now();
+  const provider = getCacheProvider();
+  let cache: "up" | "down" = "down";
+  let latencyMs: number | null = null;
+  let error: string | null = null;
+
+  try {
+    const pong = await pingCache();
+    cache = pong === "PONG" ? "up" : "down";
+    latencyMs = Date.now() - started;
+  } catch (err) {
+    error = err instanceof Error ? err.message : String(err);
+  }
+
+  const ready = await isCacheReady().catch(() => false);
+
+  return c.json({
+    status: cache === "up" ? "ok" : "degraded",
+    cache: { provider, status: cache, ready, latencyMs, error },
+    // keep redis key for backwards compat if provider is redis
+    redis: { provider, status: cache, ready, latencyMs, error },
+    env: ENV.NODE_ENV,
+  });
+});
+
+// Demo: cache-aside example (shows getCachedData wiring)
+// GET /cache/demo -> caches timestamp for 60s (memory locally, redis in docker)
+app.get("/cache/demo", async (c) => {
+  const data = await getCachedData(
+    "demo:timestamp",
+    async () => ({ timestamp: new Date().toISOString(), generatedAt: Date.now() }),
+    60,
+  );
+  return c.json({ ...data, _cacheProvider: getCacheProvider() });
+});
+
+// POST /cache/invalidate/:key -> invalidate pattern
+app.post("/cache/invalidate/:key", async (c) => {
+  const key = c.req.param("key");
+  await invalidateCache(key);
+  return c.json({ invalidated: key, provider: getCacheProvider() });
+});
+
+// Graceful shutdown
+const shutdown = async () => {
+  console.log("Shutting down: disconnecting cache...");
+  await disconnectCache().catch((err) => console.error("Cache disconnect error on shutdown", err));
+};
+
+process.once("SIGINT", () => void shutdown());
+process.once("SIGTERM", () => void shutdown());
 
 export default app;

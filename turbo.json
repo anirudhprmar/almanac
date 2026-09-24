@@ -20,7 +20,11 @@
   },
   "globalEnv": [
     "CI",
+    "CACHE_PROVIDER",
     "CORS_ORIGIN",
+    "REDIS_URL",
+    "USE_REDIS",
+    "REDIS_ENABLED",
     "NEXT_PUBLIC_SERVER_URL",
     "NODE_ENV",
     "VERCEL",

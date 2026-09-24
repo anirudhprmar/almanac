@@ -1,0 +1,11 @@
+{
+	"extends": "@almanac/config/tsconfig.base.json",
+	"compilerOptions": {
+		"noEmit": true,
+		"types": ["bun", "node"],
+		"lib": ["ESNext", "DOM"],
+		"rootDir": ".",
+		"allowImportingTsExtensions": true
+	},
+	"include": ["*.ts", "cache/**/*"]
+}
