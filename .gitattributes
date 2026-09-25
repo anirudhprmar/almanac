@@ -1,0 +1,4 @@
+# Normalize line endings: LF in the repo and working tree on every OS.
+# Prevents whole-file CRLF/LF churn (e.g. from core.autocrlf) showing up as
+# phantom modifications.
+* text=auto eol=lf
