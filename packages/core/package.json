@@ -8,6 +8,7 @@
 		"./markdown-parser": "./markdown-parser.ts",
 		"./article-loader": "./article-loader.ts",
 		"./backlinks": "./backlinks.ts",
+		"./graph": "./graph.ts",
 		"./cache": "./cache/index.ts",
 		"./cache/memory-cache": "./cache/memory-cache.ts",
 		"./cache/redis-client": "./cache/redis-client.ts"

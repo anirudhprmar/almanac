@@ -1,57 +1,69 @@
-import { file as bunFile } from "bun";
+import { readFile, stat } from "node:fs/promises";
 import matter from "gray-matter";
 
 export type Markdown = {
-  title: string;
-  slug: string;
-  description?: string;
-  content: string;
-  path: string;
-  rawContent: string;
-  frontmatter: Record<string, unknown>;
-  lastModified: Date;
+	title: string;
+	slug: string;
+	description?: string;
+	content: string;
+	path: string;
+	rawContent: string;
+	frontmatter: Record<string, unknown>;
+	lastModified: Date;
 };
 
-function slugify(input: string): string {
-  return input
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .replace(/-{2,}/g, "-");
+export function slugify(input: string): string {
+	return input
+		.toLowerCase()
+		.trim()
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/^-+|-+$/g, "")
+		.replace(/-{2,}/g, "-");
 }
 
 export async function parseMarkdown(filePath: string): Promise<Markdown> {
-  const f = bunFile(filePath);
+	let rawContent: string;
+	try {
+		rawContent = await readFile(filePath, "utf-8");
+	} catch {
+		throw new Error(`Markdown file not found: ${filePath}`);
+	}
+	const { data, content } = matter(rawContent);
 
-  if (!(await f.exists())) {
-    throw new Error(`Markdown file not found: ${filePath}`);
-  }
+	if (!data.title || typeof data.title !== "string" || !data.title.trim()) {
+		throw new Error(`Missing or invalid 'title' in frontmatter: ${filePath}`);
+	}
 
-  const rawContent = await f.text();
-  const { data, content } = matter(rawContent);
+	const title = data.title.trim();
 
-  if (!data.title || typeof data.title !== "string" || !data.title.trim()) {
-    throw new Error(`Missing or invalid 'title' in frontmatter: ${filePath}`);
-  }
+	const rawSlug = typeof data.slug === "string" ? data.slug.trim() : "";
+	const slug = rawSlug ? slugify(rawSlug) : slugify(title);
 
-  const title = data.title.trim();
+	if (!slug) {
+		throw new Error(
+			`Unable to generate slug for: ${filePath} (title: "${title}")`,
+		);
+	}
 
-  const rawSlug = typeof data.slug === "string" ? data.slug.trim() : "";
-  const slug = rawSlug ? slugify(rawSlug) : slugify(title);
+	let lastModified = new Date();
+	try {
+		const st = await stat(filePath);
+		lastModified = st.mtime;
+	} catch {
+		// keep default
+	}
 
-  if (!slug) {
-    throw new Error(`Unable to generate slug for: ${filePath} (title: "${title}")`);
-  }
-
-  return {
-    title,
-    slug,
-    description: typeof data.description === "string" ? data.description.trim() || undefined : undefined,
-    content: content.trim(),
-    path: filePath,
-    rawContent,
-    frontmatter: data as Record<string, unknown>,
-    lastModified: new Date(f.lastModified),
-  };
+	return {
+		title,
+		slug,
+		description:
+			typeof data.description === "string"
+				? data.description.trim() || undefined
+				: undefined,
+		content: content.trim(),
+		path: filePath,
+		rawContent,
+		frontmatter: data as Record<string, unknown>,
+		lastModified,
+	};
 }
