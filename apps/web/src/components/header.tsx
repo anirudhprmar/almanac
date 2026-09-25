@@ -2,10 +2,12 @@
 import Link from "next/link";
 
 import { ModeToggle } from "./mode-toggle";
+import SearchBox from "./search/SearchBox";
 
 export default function Header() {
 	const links = [
 		{ to: "/", label: "Home" },
+		{ to: "/search", label: "Search" },
 		{ to: "/graph", label: "Graph" },
 	] as const;
 
@@ -22,6 +24,7 @@ export default function Header() {
 					})}
 				</nav>
 				<div className="flex items-center gap-2">
+					<SearchBox className="hidden w-48 sm:block md:w-64" />
 					<ModeToggle />
 				</div>
 			</div>

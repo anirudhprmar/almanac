@@ -4,6 +4,11 @@ import { getArticles } from "@almanac/core/article-loader";
 import { buildBacklinkMap } from "@almanac/core/backlinks";
 import { getCachedData } from "@almanac/core/cache";
 import { buildGraphData, getLocalGraph } from "@almanac/core/graph";
+import {
+	buildSearchIndexJson,
+	type SearchHit,
+	searchArticles,
+} from "@almanac/core/search";
 
 import { ENV } from "./env.server";
 
@@ -38,6 +43,41 @@ export async function getGraphData() {
 
 export async function getLocalGraphData(slug: string, depth: number) {
 	return getLocalGraph(await getGraphData(), slug, depth);
+}
+
+const SEARCH_INDEX_TTL_SECONDS = 300;
+
+export async function searchContent(
+	query: string,
+	limit = 10,
+): Promise<SearchHit[]> {
+	const q = query.trim().slice(0, 200);
+	if (!q) return [];
+	const dir = contentDir();
+	try {
+		const articles = await getArticles(dir);
+		return searchArticles(articles, q, limit);
+	} catch {
+		return [];
+	}
+}
+
+/**
+ * Serialized MiniSearch index JSON for the whole vault.
+ * Fetch once from the browser for instant client-side search
+ * (Obsidian/Quartz-style) via `loadSearchIndex` in `@almanac/core/search`.
+ */
+export async function getSearchIndexJson(): Promise<string> {
+	const dir = contentDir();
+	try {
+		return await getCachedData(
+			`search-index:${dir}`,
+			async () => buildSearchIndexJson(await getArticles(dir)),
+			SEARCH_INDEX_TTL_SECONDS,
+		);
+	} catch {
+		return buildSearchIndexJson([]);
+	}
 }
 
 export async function getArticleDetail(slug: string) {

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import SearchBox from "@/components/search/SearchBox";
 import { getArticles } from "@/lib/wiki";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +23,8 @@ export default async function Home() {
 					{articles.length > 0 && "."}
 				</p>
 			</div>
+
+			<SearchBox />
 
 			{articles.length > 0 && (
 				<ul className="divide-y rounded-lg border">

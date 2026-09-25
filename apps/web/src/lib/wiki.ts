@@ -15,6 +15,14 @@ export type ArticleDetail = {
 	backlinks: Article[];
 };
 
+export type SearchHit = {
+	slug: string;
+	title: string;
+	description?: string;
+	score: number;
+	excerpt: string | null;
+};
+
 export function serverUrl(): string {
 	return (ENV.NEXT_PUBLIC_SERVER_URL ?? "http://localhost:3000").replace(
 		/\/$/,
@@ -70,6 +78,22 @@ export async function getArticleDetail(
 	} catch (err) {
 		if (isNotFound(err)) return null;
 		throw err;
+	}
+}
+
+/** Ranked full-text hits for a query. Empty list for blank queries or when the server is unreachable. */
+export async function searchNotes(
+	query: string,
+	limit = 20,
+): Promise<SearchHit[]> {
+	const q = query.trim();
+	if (!q) return [];
+	try {
+		return await api<SearchHit[]>(
+			`/api/search?q=${encodeURIComponent(q)}&limit=${limit}`,
+		);
+	} catch {
+		return [];
 	}
 }
 

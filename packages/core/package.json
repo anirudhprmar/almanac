@@ -9,6 +9,7 @@
 		"./article-loader": "./article-loader.ts",
 		"./backlinks": "./backlinks.ts",
 		"./graph": "./graph.ts",
+		"./search": "./search.ts",
 		"./cache": "./cache/index.ts",
 		"./cache/memory-cache": "./cache/memory-cache.ts",
 		"./cache/redis-client": "./cache/redis-client.ts"
@@ -19,6 +20,7 @@
 	"dependencies": {
 		"gray-matter": "^4.0.3",
 		"ioredis": "^5.8.2",
+		"minisearch": "^7.2.0",
 		"zod": "catalog:"
 	},
 	"devDependencies": {

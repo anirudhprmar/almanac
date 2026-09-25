@@ -17,6 +17,8 @@ import {
 	getArticleDetail,
 	getGraphData,
 	getLocalGraphData,
+	getSearchIndexJson,
+	searchContent,
 } from "./content";
 import { ENV } from "./env.server";
 
@@ -119,6 +121,25 @@ app.get("/api/articles/:slug", async (c) => {
 			500,
 		);
 	}
+});
+
+// GET /api/search/index -> serialized MiniSearch index for client-side search
+// NOTE: register before /api/search/:slug-style routes; kept above /api/search
+// for clarity even though there is no conflicting param route today.
+app.get("/api/search/index", async (c) => {
+	const json = await getSearchIndexJson();
+	return c.json(JSON.parse(json));
+});
+
+// GET /api/search?q=...&limit=10 -> ranked full-text hits { slug, title, description, score, excerpt }
+app.get("/api/search", async (c) => {
+	const q = (c.req.query("q") ?? "").trim().slice(0, 200);
+	const limit = Math.min(
+		Math.max(Number.parseInt(c.req.query("limit") ?? "10", 10) || 10, 1),
+		50,
+	);
+	if (!q) return c.json([]);
+	return c.json(await searchContent(q, limit));
 });
 
 // GET /api/graph -> global wiki graph { nodes, links }
