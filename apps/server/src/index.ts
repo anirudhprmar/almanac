@@ -21,6 +21,7 @@ import {
 	searchContent,
 } from "./content";
 import { ENV } from "./env.server";
+import { startContentWatcher } from "./watcher";
 
 // Configure cache provider
 // Local clone: CACHE_PROVIDER=memory (default, in-memory Map, no docker/redis needed)
@@ -160,9 +161,15 @@ app.get("/api/graph/:slug", async (c) => {
 	return c.json(graph);
 });
 
+// Keep API in sync with /wiki: on add/change/unlink, invalidate + rebuild caches.
+const contentWatcher = startContentWatcher();
+
 // Graceful shutdown
 const shutdown = async () => {
-	console.log("Shutting down: disconnecting cache...");
+	console.log("Shutting down: closing watcher, disconnecting cache...");
+	await contentWatcher
+		?.close()
+		.catch((err) => console.error("Watcher close error on shutdown", err));
 	await disconnectCache().catch((err) =>
 		console.error("Cache disconnect error on shutdown", err),
 	);

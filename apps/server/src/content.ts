@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { getArticles } from "@almanac/core/article-loader";
 import { buildBacklinkMap } from "@almanac/core/backlinks";
-import { getCachedData } from "@almanac/core/cache";
+import { getCachedData, invalidateCache } from "@almanac/core/cache";
 import { buildGraphData, getLocalGraph } from "@almanac/core/graph";
 import {
 	buildSearchIndexJson,
@@ -87,4 +87,43 @@ export async function getArticleDetail(slug: string) {
 	if (!article) return null;
 	const backlinks = buildBacklinkMap(articles).get(article.slug) ?? [];
 	return { article, backlinks };
+}
+
+/**
+ * Invalidate all wiki-derived caches (articles, graph, search index).
+ * Called by the file watcher when markdown under CONTENT_DIR changes,
+ * and available to API consumers (e.g. POST /cache/invalidate/*).
+ */
+export async function invalidateContentCache(): Promise<void> {
+	await Promise.all([
+		invalidateCache("articles:*"),
+		invalidateCache("graph:*"),
+		invalidateCache("search-index:*"),
+	]);
+}
+
+/**
+ * Warm the caches after an invalidation so the next API request is fast.
+ * Best-effort: logs and swallows errors so watcher callbacks never crash.
+ */
+export async function rebuildContentCache(): Promise<void> {
+	const dir = contentDir();
+	try {
+		const articles = await getArticles(dir);
+		await Promise.all([getGraphData(), getSearchIndexJson()]);
+		console.log(
+			`[content] rebuilt cache: ${articles.length} articles from ${dir}`,
+		);
+	} catch (err) {
+		console.warn(
+			"[content] cache rebuild failed:",
+			err instanceof Error ? err.message : String(err),
+		);
+	}
+}
+
+/** Invalidate + rebuild in one step (file-watcher path). */
+export async function refreshContentCache(): Promise<void> {
+	await invalidateContentCache();
+	await rebuildContentCache();
 }
