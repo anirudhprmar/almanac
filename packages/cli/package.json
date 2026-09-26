@@ -1,0 +1,25 @@
+{
+	"name": "@almanac/cli",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"bin": {
+		"almanac": "./dist/index.js"
+	},
+	"scripts": {
+		"build": "tsdown",
+		"check-types": "tsc --noEmit",
+		"dev": "bun run src/index.ts --"
+	},
+	"dependencies": {
+		"@almanac/core": "workspace:*",
+		"citty": "^0.1.6"
+	},
+	"devDependencies": {
+		"@almanac/config": "workspace:*",
+		"@types/bun": "catalog:",
+		"@types/node": "^26.6.2",
+		"tsdown": "^0.23.0",
+		"typescript": "catalog:"
+	}
+}
