@@ -9,7 +9,7 @@
 	"scripts": {
 		"build": "tsdown",
 		"check-types": "tsc --noEmit",
-		"dev": "bun run src/index.ts --"
+		"start": "bun run src/index.ts --"
 	},
 	"dependencies": {
 		"@almanac/core": "workspace:*",
