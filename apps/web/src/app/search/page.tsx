@@ -1,6 +1,8 @@
+import type { Route } from "next";
 import Link from "next/link";
-import SearchBox from "@/components/search/SearchBox";
-import { searchNotes } from "@/lib/wiki";
+import WikiSearch from "@/components/wiki/WikiSearch";
+import WikiShell from "@/components/wiki/WikiShell";
+import { getSiteBrand, searchNotes } from "@/lib/wiki";
 
 export const dynamic = "force-dynamic";
 
@@ -11,64 +13,100 @@ type SearchPageProps = {
 export async function generateMetadata({ searchParams }: SearchPageProps) {
 	const { q } = await searchParams;
 	const query = (q ?? "").trim();
+	const brand = await getSiteBrand().catch(() => null);
+	const pedia = brand?.pedia ?? "Usernamepedia";
 	return {
-		title: query ? `Search: ${query} · almanac` : "Search · almanac",
+		title: query ? `Search results for "${query}"` : "Search",
 		description: query
-			? `Full-text search results for "${query}"`
-			: "Search all notes",
+			? `${pedia} search results for "${query}"`
+			: `Search ${pedia}`,
 	};
 }
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
 	const { q } = await searchParams;
 	const query = (q ?? "").trim();
-	const hits = query ? await searchNotes(query) : [];
+	const [hits, brand] = await Promise.all([
+		query ? searchNotes(query) : Promise.resolve([]),
+		getSiteBrand(),
+	]);
+	const { pedia } = brand;
 
 	return (
-		<div className="container mx-auto max-w-3xl space-y-6 px-4 py-6">
-			<div className="space-y-3">
-				<h1 className="font-semibold text-3xl">Search</h1>
-				<SearchBox defaultValue={query} autoFocus />
+		<WikiShell
+			brand={brand}
+			namespaceTabs={[{ label: "Special page", href: "/search", active: true }]}
+			viewTabs={[]}
+			searchDefault={query}
+		>
+			<h1 className="wiki-title">Search</h1>
+			<p className="mt-1 text-[#54595d] text-[12.5px]">
+				From {pedia}, the free encyclopedia
+			</p>
+
+			<div className="mt-3 max-w-xl">
+				<WikiSearch defaultValue={query} size="md" pedia={pedia} />
 			</div>
+			<p className="mt-2 text-[#54595d] text-[13px]">
+				Search across titles, descriptions, and content. Prefix matches and
+				typos are tolerated. Try{" "}
+				<a href="/random" className="wiki-link">
+					a random article
+				</a>{" "}
+				if you&apos;re feeling lucky.
+			</p>
 
 			{!query ? (
-				<p className="text-muted-foreground text-sm">
-					Type above to search across titles, descriptions, and content. Prefix
-					matches and typos are tolerated.
-				</p>
+				<div className="wiki-ambox mt-3">
+					Type above and press <b>Search</b>. Results appear here, ranked by
+					title and content matches — just like <i>Special:Search</i> on
+					Wikipedia.
+				</div>
 			) : hits.length === 0 ? (
-				<p className="text-muted-foreground text-sm">
-					No results for “{query}”. Try fewer words or check spelling.
-				</p>
-			) : (
-				<div className="space-y-2">
-					<p className="text-muted-foreground text-sm">
-						{hits.length} result{hits.length === 1 ? "" : "s"} for “{query}”
+				<div className="mt-3">
+					<h2 className="wiki-h2">Search results</h2>
+					<p className="text-[13.5px]">
+						There were no results matching the query <b>“{query}”</b>.
 					</p>
-					<ul className="divide-y rounded-lg border">
-						{hits.map((h) => (
-							<li key={h.slug}>
-								<Link
-									className="block p-4 transition-colors hover:bg-muted/50"
-									href={`/wiki/${h.slug}`}
-								>
-									<p className="font-medium">{h.title}</p>
-									{h.description && (
-										<p className="mt-0.5 text-muted-foreground text-sm">
-											{h.description}
-										</p>
-									)}
-									{h.excerpt && (
-										<p className="mt-0.5 line-clamp-2 text-muted-foreground text-sm">
-											{h.excerpt}
-										</p>
-									)}
-								</Link>
-							</li>
-						))}
+					<ul className="mt-2 list-disc pl-6 text-[13.5px]">
+						<li>Try fewer words or check your spelling.</li>
+						<li>
+							<Link href="/" className="wiki-link">
+								Browse all articles A–Z
+							</Link>{" "}
+							from the Main Page.
+						</li>
 					</ul>
 				</div>
+			) : (
+				<div className="mt-3">
+					<h2 className="wiki-h2">Search results</h2>
+					<p className="text-[#54595d] text-[13px]">
+						{hits.length} result{hits.length === 1 ? "" : "s"} for{" "}
+						<b>“{query}”</b>
+					</p>
+					<ol className="mt-2 space-y-3">
+						{hits.map((h) => (
+							<li key={h.slug}>
+								<p className="wiki-search-result-title">
+									<Link href={`/wiki/${h.slug}` as Route}>{h.title}</Link>
+								</p>
+								{h.description && (
+									<p className="text-[#202122] text-[13px]">{h.description}</p>
+								)}
+								{h.excerpt && (
+									<p className="line-clamp-2 text-[#54595d] text-[13px]">
+										{h.excerpt}
+									</p>
+								)}
+								<p className="wiki-search-result-meta">
+									/{h.slug} · score {h.score.toFixed(1)}
+								</p>
+							</li>
+						))}
+					</ol>
+				</div>
 			)}
-		</div>
+		</WikiShell>
 	);
 }

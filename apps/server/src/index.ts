@@ -18,6 +18,7 @@ import {
 	getGraphData,
 	getLocalGraphData,
 	getSearchIndexJson,
+	getSiteBrand,
 	searchContent,
 } from "./content";
 import { ENV } from "./env.server";
@@ -97,6 +98,11 @@ app.post("/cache/invalidate/:key", async (c) => {
 });
 
 // --- Wiki API (articles, backlinks, graph) ---
+
+// GET /api/meta -> encyclopedia brand { name, pedia }, e.g. { name: "Anirudh", pedia: "Anirudhpedia" }
+app.get("/api/meta", async (c) => {
+	return c.json(await getSiteBrand());
+});
 
 // GET /api/articles -> all articles (newest first)
 app.get("/api/articles", async (c) => {

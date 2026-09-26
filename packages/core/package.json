@@ -10,6 +10,8 @@
 		"./backlinks": "./backlinks.ts",
 		"./graph": "./graph.ts",
 		"./search": "./search.ts",
+		"./site-brand": "./site-brand.ts",
+		"./site-config": "./site-config.ts",
 		"./cache": "./cache/index.ts",
 		"./cache/memory-cache": "./cache/memory-cache.ts",
 		"./cache/redis-client": "./cache/redis-client.ts"

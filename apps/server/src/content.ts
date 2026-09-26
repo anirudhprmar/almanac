@@ -9,6 +9,8 @@ import {
 	type SearchHit,
 	searchArticles,
 } from "@almanac/core/search";
+import { brandOf, DEFAULT_SITE_NAME } from "@almanac/core/site-brand";
+import { findSiteRoot, readSiteName } from "@almanac/core/site-config";
 
 import { ENV } from "./env.server";
 
@@ -27,6 +29,23 @@ export function contentDir(): string {
 }
 
 const GRAPH_TTL_SECONDS = 300;
+
+/**
+ * Encyclopedia brand for the frontend: `{ name, pedia }`, e.g.
+ * `{ name: "Anirudh", pedia: "Anirudhpedia" }`.
+ * Source order: SITE_NAME env override -> almanac.config.* name -> default.
+ */
+export async function getSiteBrand(): Promise<{ name: string; pedia: string }> {
+	const fromEnv = process.env.SITE_NAME?.trim();
+	if (fromEnv) return brandOf(fromEnv);
+	try {
+		const root = findSiteRoot(contentDir()) ?? contentDir();
+		const fromConfig = await readSiteName(root);
+		return brandOf(fromConfig ?? DEFAULT_SITE_NAME);
+	} catch {
+		return brandOf(DEFAULT_SITE_NAME);
+	}
+}
 
 export async function getGraphData() {
 	const dir = contentDir();

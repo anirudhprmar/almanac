@@ -1,11 +1,36 @@
 import type { Article } from "@almanac/core/article-loader";
 import { resolveSlug } from "@almanac/core/backlinks";
 import { slugify } from "@almanac/core/markdown-parser";
+import {
+	brandOf,
+	DEFAULT_SITE_NAME,
+	FALLBACK_PEDIA,
+	type SiteBrand,
+} from "@almanac/core/site-brand";
 import { ENV } from "@/env";
 
 import { wikiHref } from "./wiki-href";
 
+export type { SiteBrand };
 export { wikiHref };
+
+export const FALLBACK_BRAND: SiteBrand = {
+	name: DEFAULT_SITE_NAME,
+	pedia: FALLBACK_PEDIA,
+};
+
+/** Encyclopedia brand (`{ name, pedia }`) from the server; Usernamepedia fallback when unreachable. */
+export async function getSiteBrand(): Promise<SiteBrand> {
+	try {
+		const meta = await api<{ name: string; pedia: string }>("/api/meta");
+		if (meta && typeof meta.name === "string" && meta.name.trim()) {
+			return brandOf(meta.name);
+		}
+	} catch {
+		// fall through to the generic brand
+	}
+	return { ...FALLBACK_BRAND };
+}
 
 /** Article as returned by the API (dates serialize to ISO strings). */
 type ApiArticle = Omit<Article, "lastModified"> & { lastModified: string };
