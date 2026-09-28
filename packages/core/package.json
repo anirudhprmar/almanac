@@ -14,7 +14,12 @@
 		"./site-config": "./site-config.ts",
 		"./cache": "./cache/index.ts",
 		"./cache/memory-cache": "./cache/memory-cache.ts",
-		"./cache/redis-client": "./cache/redis-client.ts"
+		"./cache/redis-client": "./cache/redis-client.ts",
+		"./raw-scan": "./raw-scan.ts",
+		"./compile-state": "./compile-state.ts",
+		"./compile-prompt": "./compile-prompt.ts",
+		"./compile-llm": "./compile-llm.ts",
+		"./wiki-writer": "./wiki-writer.ts"
 	},
 	"scripts": {
 		"check-types": "tsc --noEmit"

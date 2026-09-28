@@ -19,6 +19,15 @@ export type AlmanacConfig = {
 	webPort?: number;
 	/** Hono server port. Defaults to 3000. */
 	serverPort?: number;
+	/** Compile defaults (LLM + source scanning). All optional. */
+	compile?: {
+		provider?: string;
+		model?: string;
+		baseUrl?: string;
+		includeDrafts?: boolean;
+		includeOutputs?: boolean;
+		maxCharsPerFile?: number;
+	};
 };
 
 export type ResolvedAlmanacConfig = {
@@ -33,6 +42,15 @@ export type ResolvedAlmanacConfig = {
 	outputDir: string;
 	webPort: number;
 	serverPort: number;
+	/** Resolved compile defaults (flags override these). */
+	compile: {
+		provider?: string;
+		model?: string;
+		baseUrl?: string;
+		includeDrafts: boolean;
+		includeOutputs: boolean;
+		maxCharsPerFile: number;
+	};
 };
 
 export type LoadedConfig = {
@@ -74,6 +92,20 @@ function asPort(value: unknown): number | null {
 		: null;
 }
 
+function asMaxChars(value: unknown): number | null {
+	const n = typeof value === "string" ? Number.parseInt(value, 10) : value;
+	return typeof n === "number" &&
+		Number.isFinite(n) &&
+		n >= 1000 &&
+		n <= 200_000
+		? n
+		: null;
+}
+
+function asBool(value: unknown): boolean | null {
+	return typeof value === "boolean" ? value : null;
+}
+
 function resolveConfig(
 	root: string,
 	raw: AlmanacConfig | null,
@@ -90,6 +122,14 @@ function resolveConfig(
 		outputDir: resolve(root, outputDir),
 		webPort: asPort(raw?.webPort) ?? DEFAULTS.webPort,
 		serverPort: asPort(raw?.serverPort) ?? DEFAULTS.serverPort,
+		compile: {
+			provider: asString(raw?.compile?.provider) ?? undefined,
+			model: asString(raw?.compile?.model) ?? undefined,
+			baseUrl: asString(raw?.compile?.baseUrl) ?? undefined,
+			includeDrafts: asBool(raw?.compile?.includeDrafts) ?? true,
+			includeOutputs: asBool(raw?.compile?.includeOutputs) ?? false,
+			maxCharsPerFile: asMaxChars(raw?.compile?.maxCharsPerFile) ?? 24_000,
+		},
 	};
 }
 

@@ -56,3 +56,6 @@ coverage
 .cache
 tmp
 temp
+
+# Almanac compile state (incremental bookkeeping, machine-local)
+.almanac/
