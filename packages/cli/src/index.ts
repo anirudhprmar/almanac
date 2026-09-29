@@ -1,4 +1,5 @@
 import { defineCommand, runMain } from "citty";
+import ask from "./commands/ask.ts";
 import backlinks from "./commands/backlinks.ts";
 import compile from "./commands/compile.ts";
 import dev from "./commands/dev.ts";
@@ -7,6 +8,7 @@ import index from "./commands/index.ts";
 import init from "./commands/init.ts";
 import links from "./commands/links.ts";
 import list from "./commands/list.ts";
+import mcp from "./commands/mcp.ts";
 import fresh from "./commands/new.ts";
 import search from "./commands/search.ts";
 import show from "./commands/show.ts";
@@ -27,6 +29,8 @@ const main = defineCommand({
 		list,
 		show,
 		search,
+		ask,
+		mcp,
 		graph,
 		backlinks,
 		links,

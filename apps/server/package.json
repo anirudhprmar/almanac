@@ -7,11 +7,14 @@
 		"check-types": "tsc --noEmit",
 		"compile": "bun build --compile --no-compile-autoload-dotenv --minify --sourcemap --bytecode ./src/index.ts --outfile server",
 		"dev": "bun run --hot src/index.ts",
+		"dev:mcp": "bun run src/mcp.ts",
 		"start": "bun run dist/index.mjs",
+		"start:mcp": "bun run dist/mcp.mjs",
 		"env:generate": "varlock codegen"
 	},
 	"dependencies": {
 		"@almanac/core": "workspace:*",
+		"@modelcontextprotocol/sdk": "^1.31.0",
 		"chokidar": "^5.0.0",
 		"hono": "^4.13.7",
 		"varlock": "catalog:",

@@ -22,6 +22,7 @@ import {
 	searchContent,
 } from "./content";
 import { ENV } from "./env.server";
+import { MCP_ROUTE_PATH, registerMcpRoutes } from "./mcp";
 import { startContentWatcher } from "./watcher";
 
 // Configure cache provider
@@ -165,6 +166,22 @@ app.get("/api/graph/:slug", async (c) => {
 		return c.json({ error: "Article not found" }, 404);
 	}
 	return c.json(graph);
+});
+
+// --- MCP (Model Context Protocol) ---
+// Streamable HTTP endpoint for web MCP clients (Claude / Cursor / ChatGPT).
+// stdio transport lives in ./mcp.ts (`bun run src/mcp.ts` or `almanac mcp`).
+registerMcpRoutes(app);
+
+// MCP discovery: which tools exist and where the stdio entry lives.
+app.get("/mcp/info", async (c) => {
+	const { ALMANAC_MCP_TOOL_NAMES } = await import("./mcp");
+	return c.json({
+		route: MCP_ROUTE_PATH,
+		transport: "streamable-http (stateless)",
+		stdio: "bun run apps/server/src/mcp.ts (or `almanac mcp`)",
+		tools: ALMANAC_MCP_TOOL_NAMES,
+	});
 });
 
 // Keep API in sync with /wiki: on add/change/unlink, invalidate + rebuild caches.
