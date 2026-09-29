@@ -73,7 +73,7 @@ export default async function WikiPage({ params }: WikiPageProps) {
 				</p>
 			)}
 
-			{/* infobox */}
+			{}
 			<aside
 				className="wiki-infobox"
 				aria-label={`${article.title} quick facts`}
@@ -163,7 +163,7 @@ export default async function WikiPage({ params }: WikiPageProps) {
 
 			<Markdown content={body} />
 
-			{/* See also */}
+			{}
 			{outgoing.length > 0 && (
 				<section aria-label="See also">
 					<h2 className="wiki-h2" id="see-also">
@@ -179,7 +179,7 @@ export default async function WikiPage({ params }: WikiPageProps) {
 				</section>
 			)}
 
-			{/* What links here */}
+			{}
 			<section id="whatlinkshere" aria-label="What links here">
 				<h2 className="wiki-h2">What links here</h2>
 				<p className="text-[#54595d] text-[13px]">
@@ -205,7 +205,7 @@ export default async function WikiPage({ params }: WikiPageProps) {
 				</p>
 			</section>
 
-			{/* Local interactive graph */}
+			{}
 			<section aria-label="Graph">
 				<h2 className="wiki-h2" id="graph">
 					Graph
@@ -221,7 +221,7 @@ export default async function WikiPage({ params }: WikiPageProps) {
 				<LocalGraph slug={article.slug} depth={1} height={320} />
 			</section>
 
-			{/* Talk / Edit / History anchors so the tabs land somewhere real */}
+			{}
 			<section id="talk" aria-label="Talk">
 				<h2 className="wiki-h2">Talk</h2>
 				<div className="wiki-ambox">
@@ -259,7 +259,7 @@ export default async function WikiPage({ params }: WikiPageProps) {
 				</ul>
 			</section>
 
-			{/* Categories */}
+			{}
 			<div className="wiki-catbox">
 				<b>Categories</b>
 				{": "}

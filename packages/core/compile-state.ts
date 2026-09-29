@@ -67,10 +67,6 @@ export type ChangeSelection = {
 	unchanged: RawFile[];
 };
 
-/**
- * Split scanned files into new/changed vs already-processed.
- * Binary files are compared by size+mtime fingerprint (see raw-scan).
- */
 export function selectChangedFiles(
 	files: RawFile[],
 	state: CompileState,
@@ -109,7 +105,6 @@ export function markProcessed(
 	}
 }
 
-/** Remove state entries whose source file no longer exists. */
 export function pruneState(state: CompileState, liveKeys: Set<string>): number {
 	let removed = 0;
 	for (const key of Object.keys(state.files)) {

@@ -44,7 +44,6 @@ export default defineCommand({
 
 		const issues: Issue[] = [];
 
-		// Duplicate slugs (same canonical slug from different paths/titles)
 		const seen = new Map<string, string>();
 		for (const a of articles) {
 			const first = seen.get(a.slug);
@@ -59,7 +58,6 @@ export default defineCommand({
 			}
 		}
 
-		// Known slugs: canonical + title slugs + aliases
 		const known = new Set<string>();
 		for (const a of articles) {
 			known.add(a.slug);
@@ -73,7 +71,6 @@ export default defineCommand({
 			}
 		}
 
-		// Broken links: outgoing targets with no known article
 		for (const a of articles) {
 			for (const target of extractOutgoingSlugs(a.content)) {
 				if (!known.has(target)) {
@@ -86,7 +83,6 @@ export default defineCommand({
 			}
 		}
 
-		// Orphans (no in/out links)
 		const graph = buildGraphData(articles);
 		for (const n of graph.nodes) {
 			if (n.degree === 0) {

@@ -8,11 +8,10 @@ export type ContentWatcher = {
 };
 
 export type StartContentWatcherOptions = {
-	/** Override the directory to watch (defaults to contentDir()). */
 	dir?: string;
-	/** Debounce window for coalescing rapid saves. Defaults to 250ms. */
+
 	debounceMs?: number;
-	/** Called after each successful invalidate + rebuild. */
+
 	onRefresh?: (info: { dir: string; paths: string[] }) => void;
 };
 
@@ -25,21 +24,12 @@ function isWatcherDisabled(): boolean {
 		.trim()
 		.toLowerCase();
 	if (raw === "1" || raw === "true" || raw === "yes") return true;
-	// Never watch during tests — vitest/bun test file writes would cause flakiness.
+
 	if (process.env.NODE_ENV === "test" || process.env.BUN_TEST === "1")
 		return true;
 	return false;
 }
 
-/**
- * Watch the wiki content dir and keep the API in sync.
- *
- * On add/change/unlink of `*.md` files (debounced): invalidate cached
- * articles/graph/search-index, then rebuild (warm) so subsequent
- * API requests serve fresh data without a cold miss.
- *
- * Returns null when watching is disabled or the dir is missing.
- */
 export function startContentWatcher(
 	opts: StartContentWatcherOptions = {},
 ): ContentWatcher | null {
@@ -56,9 +46,6 @@ export function startContentWatcher(
 		return null;
 	}
 
-	// NOTE: watch the absolute dir (not a "**/*.md" glob with cwd) — glob-only
-	// watching misses events on some runtimes (Bun 1.x + chokidar 5 on
-	// Windows, esp. when the dir starts empty). We filter to *.md below.
 	const watcher = chokidar.watch(dir, {
 		ignoreInitial: true,
 		ignored: [/(^|[/\\])\../, "**/node_modules/**"],
@@ -108,7 +95,6 @@ export function startContentWatcher(
 		timer = setTimeout(() => void flush(), debounceMs);
 	};
 
-	/** Only markdown files affect the API cache — ignore the rest. */
 	const isMarkdownPath = (path: string) => path.toLowerCase().endsWith(".md");
 
 	watcher

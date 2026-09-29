@@ -1,9 +1,8 @@
 import { type Article, loadArticles } from "./article-loader";
 import { slugify } from "./markdown-parser";
 
-// Quartz 5-style wikilink: !?[[path#heading|^block|alias]]
 const WIKI_RE = /!?\[\[([^[\]|#]+)?(#[^[\]|]+)?(\|[^[\]]+)?\]\]/g;
-// Standard markdown links: [text](target)
+
 const MD_RE = /(?<!!)\[[^\]]+\]\(([^)\s#]+)(#[^)]+)?\)/g;
 const CODE_FENCE_RE = /```[\s\S]*?```/g;
 const INLINE_CODE_RE = /`[^`]*`/g;
@@ -15,7 +14,6 @@ function stripCode(content: string): string {
 	return content.replace(CODE_FENCE_RE, "").replace(INLINE_CODE_RE, "");
 }
 
-/** Normalize a raw link target to a slug (Quartz: lowercase, basename, strip .md). */
 export function normalizeLinkTarget(raw: string): string | null {
 	const trimmed = raw.trim();
 	if (!trimmed) return null;
@@ -28,13 +26,11 @@ export function normalizeLinkTarget(raw: string): string | null {
 	return slug || null;
 }
 
-/** Extract outgoing slugs from markdown content (wikilinks + markdown links). */
 export function extractOutgoingSlugs(content: string): string[] {
 	const clean = stripCode(content);
 	const out = new Set<string>();
 
 	for (const m of clean.matchAll(WIKI_RE)) {
-		// Skip embeds: ![[...]]
 		if (m[0].startsWith("!")) continue;
 		const slug = normalizeLinkTarget(m[1] ?? "");
 		if (slug) out.add(slug);
@@ -50,7 +46,7 @@ function buildSlugIndex(articles: Article[]): Map<string, Article> {
 	const index = new Map<string, Article>();
 	for (const a of articles) {
 		index.set(a.slug, a);
-		// Match by slugified title as well (Obsidian matches [[Title]] without needing slug)
+
 		const titleSlug = slugify(a.title);
 		if (!index.has(titleSlug)) index.set(titleSlug, a);
 		const aliases = a.frontmatter?.aliases;
@@ -64,7 +60,6 @@ function buildSlugIndex(articles: Article[]): Map<string, Article> {
 	return index;
 }
 
-/** Resolve a raw wikilink/markdown target to a canonical article slug, if it exists. */
 export function resolveSlug(
 	rawTarget: string,
 	articles: Article[],
@@ -74,7 +69,6 @@ export function resolveSlug(
 	return buildSlugIndex(articles).get(normalized)?.slug ?? null;
 }
 
-/** Outgoing links per article slug, resolved against known articles (drops broken + self-links). */
 export function buildOutgoingMap(articles: Article[]): Map<string, string[]> {
 	const index = buildSlugIndex(articles);
 	const map = new Map<string, string[]>();
@@ -87,7 +81,6 @@ export function buildOutgoingMap(articles: Article[]): Map<string, string[]> {
 	return map;
 }
 
-/** Backlinks per article slug: slug -> articles that link to it. */
 export function buildBacklinkMap(articles: Article[]): Map<string, Article[]> {
 	const index = buildSlugIndex(articles);
 	const bySlug = new Map(articles.map((a) => [a.slug, a]));
@@ -97,7 +90,6 @@ export function buildBacklinkMap(articles: Article[]): Map<string, Article[]> {
 	const outgoing = buildOutgoingMap(articles);
 	for (const article of articles) {
 		for (const target of outgoing.get(article.slug) ?? []) {
-			// index.get check already guarantees target exists, bySlug.get is the canonical article
 			const dest = bySlug.get(target) ?? index.get(target);
 			if (dest) backlinks.get(dest.slug)?.push(article);
 		}
@@ -118,7 +110,7 @@ export async function getBacklinks(
 ): Promise<Article[]> {
 	const key = slugify(slug);
 	const map = await buildBacklinks(dirPath);
-	// Allow lookup by title/alias slug too
+
 	return map.get(key) ?? [];
 }
 
@@ -132,5 +124,4 @@ export async function getOutgoingLinks(
 	return buildOutgoingMap(articles).get(canonical) ?? [];
 }
 
-// Backwards-compatible alias for the old private helper name.
 export const checkForLinks = extractOutgoingSlugs;

@@ -17,14 +17,13 @@ export type RelevantArticle = {
 };
 
 export type PlannedArticle = {
-	/** kebab-case filename without .md */
 	slug: string;
 	title: string;
 	description?: string;
 	categories?: string[];
-	/** create = new file, update = merge into existing file */
+
 	action: "create" | "update";
-	/** Markdown body WITHOUT frontmatter. May contain [[wikilinks]]. */
+
 	body: string;
 };
 
@@ -66,10 +65,6 @@ function tokenize(text: string): Set<string> {
 	);
 }
 
-/**
- * Cheap keyword-overlap retrieval: rank existing articles by shared
- * vocabulary with the raw text. Keeps the LLM context small and relevant.
- */
 export function findRelevantArticles(
 	rawText: string,
 	articles: Article[],
@@ -85,7 +80,7 @@ export function findRelevantArticles(
 		);
 		let overlap = 0;
 		for (const t of tokens) if (hay.has(t)) overlap++;
-		// Boost title-word hits so obviously-related pages rank first.
+
 		const titleTokens = tokenize(a.title);
 		let titleHits = 0;
 		for (const t of titleTokens) if (tokens.has(t)) titleHits++;
@@ -195,7 +190,6 @@ export function buildBatchPrompt(args: {
 	].join("\n");
 }
 
-/** Split raw files into batches capped at ~maxChars of source text each. */
 export function batchRawFiles(
 	files: RawFile[],
 	maxChars = 20_000,

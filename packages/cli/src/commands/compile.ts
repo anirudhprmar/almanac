@@ -211,14 +211,12 @@ export default defineCommand({
 				? raw.outputs
 				: config.compile.includeOutputs;
 
-		// Progress goes to stderr in --json mode so stdout stays pure JSON.
 		const log = (...parts: unknown[]): void => {
 			const msg = parts.map((p) => String(p)).join(" ");
 			if (asJson) console.error(msg);
 			else console.log(msg);
 		};
 
-		// --- Understand the current wiki ---
 		const articles = await loadArticles(dir).catch((err: unknown) => {
 			console.error(
 				`almanac: ${err instanceof Error ? err.message : String(err)}`,
@@ -230,7 +228,6 @@ export default defineCommand({
 		const catalog = buildCatalog(articles, outgoing, backlinks);
 		const preferences = await loadPreferencesText(dir);
 
-		// --- Scan /raw (+ optionally drafts/outputs) ---
 		const scanned = await scanRawInputs({
 			rawDir: config.rawDir,
 			draftsDir: config.draftsDir,
@@ -262,7 +259,6 @@ export default defineCommand({
 		const willCallLlm =
 			!dryRun && !artifactsOnly && processable.length > 0 && llmAvailable;
 
-		// --- Dry run: plan only ---
 		if (dryRun) {
 			const plan = {
 				root,
@@ -313,7 +309,6 @@ export default defineCommand({
 			return;
 		}
 
-		// --- Call the LLM (batched, idempotent writes) ---
 		const writes: WriteResult[] = [];
 		const batchNotes: string[] = [];
 		let llmUsed = false;
@@ -382,8 +377,6 @@ export default defineCommand({
 			);
 		}
 
-		// --- Record progress (idempotent: only successful sources) ---
-		// Artifacts-only runs never touch the state file.
 		let statePath: string | null = null;
 		if (!artifactsOnly) {
 			if (processedOk.length > 0) {
@@ -396,7 +389,6 @@ export default defineCommand({
 			}
 		}
 
-		// --- Optionally archive processed raw files ---
 		const archived: string[] = [];
 		if (doArchive && processedOk.length > 0) {
 			for (const f of processedOk) {
@@ -414,7 +406,6 @@ export default defineCommand({
 			}
 		}
 
-		// --- Maintain wiki/index.md (system-owned catalog) ---
 		let indexChanged = false;
 		let indexPath = join(dir, "index.md");
 		if (updateIndex) {
@@ -423,7 +414,6 @@ export default defineCommand({
 			indexPath = res.path;
 		}
 
-		// --- Post-processing: reload, rebuild artifacts, lint ---
 		const fresh = await loadArticles(dir).catch(() => articles);
 		const graph = buildGraphData(fresh);
 		const indexRaw = buildSearchIndexJson(fresh);

@@ -13,7 +13,7 @@ export type SearchHit = {
 	title: string;
 	description?: string;
 	score: number;
-	/** ~160-char window around the first query-term match in content. */
+
 	excerpt: string | null;
 };
 
@@ -36,10 +36,6 @@ function toDoc(a: Article): SearchableDoc {
 	};
 }
 
-/**
- * Build an in-memory MiniSearch index over articles.
- * Pure function — safe to call from Hono handlers or the browser.
- */
 export function buildSearchIndex(
 	articles: Article[],
 ): MiniSearch<SearchableDoc> {
@@ -48,21 +44,14 @@ export function buildSearchIndex(
 	return index;
 }
 
-/**
- * Serialize an index to plain JSON.
- * Ship this to the browser for instant client-side search
- * (Obsidian/Quartz-style): `MiniSearch.loadJSON(json, options)`.
- */
 export function serializeSearchIndex(index: MiniSearch<SearchableDoc>): string {
 	return JSON.stringify(index.toJSON());
 }
 
-/** Serialize a fresh index built from articles. */
 export function buildSearchIndexJson(articles: Article[]): string {
 	return serializeSearchIndex(buildSearchIndex(articles));
 }
 
-/** Restore an index previously created with `serializeSearchIndex`. */
 export function loadSearchIndex(
 	json: string | object,
 ): MiniSearch<SearchableDoc> {
@@ -101,10 +90,6 @@ function buildExcerpt(
 	return snippet || null;
 }
 
-/**
- * Search articles with a prebuilt index.
- * Returns scored hits with excerpts, highest score first.
- */
 export function searchWithIndex(
 	index: MiniSearch<SearchableDoc>,
 	articles: Article[],
@@ -128,7 +113,6 @@ export function searchWithIndex(
 	});
 }
 
-/** Build an index and search in one shot (basic usage, small vaults). */
 export function searchArticles(
 	articles: Article[],
 	query: string,

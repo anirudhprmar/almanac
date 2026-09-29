@@ -10,7 +10,6 @@ type Props = {
 	pedia?: string;
 };
 
-/** Vector-style search box: input + Search button. Navigates to /search?q=... */
 export default function WikiSearch({
 	defaultValue = "",
 	id = "wiki-search",

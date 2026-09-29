@@ -14,11 +14,10 @@ import { findSiteRoot, readSiteName } from "@almanac/core/site-config";
 
 import { ENV } from "./env.server";
 
-/** Resolve the markdown content dir: CONTENT_DIR env, else <repo>/wiki. */
 export function contentDir(): string {
 	const fromEnv = ENV.CONTENT_DIR?.trim();
 	if (fromEnv) return resolve(fromEnv);
-	// Works whether cwd is apps/server (bun dev) or the repo root (turbo/docker)
+
 	for (const candidate of [
 		resolve(process.cwd(), "../../wiki"),
 		resolve(process.cwd(), "wiki"),
@@ -30,11 +29,6 @@ export function contentDir(): string {
 
 const GRAPH_TTL_SECONDS = 300;
 
-/**
- * Encyclopedia brand for the frontend: `{ name, pedia }`, e.g.
- * `{ name: "Anirudh", pedia: "Anirudhpedia" }`.
- * Source order: SITE_NAME env override -> almanac.config.* name -> default.
- */
 export async function getSiteBrand(): Promise<{ name: string; pedia: string }> {
 	const fromEnv = process.env.SITE_NAME?.trim();
 	if (fromEnv) return brandOf(fromEnv);
@@ -81,11 +75,6 @@ export async function searchContent(
 	}
 }
 
-/**
- * Serialized MiniSearch index JSON for the whole vault.
- * Fetch once from the browser for instant client-side search
- * (Obsidian/Quartz-style) via `loadSearchIndex` in `@almanac/core/search`.
- */
 export async function getSearchIndexJson(): Promise<string> {
 	const dir = contentDir();
 	try {
@@ -108,11 +97,6 @@ export async function getArticleDetail(slug: string) {
 	return { article, backlinks };
 }
 
-/**
- * Invalidate all wiki-derived caches (articles, graph, search index).
- * Called by the file watcher when markdown under CONTENT_DIR changes,
- * and available to API consumers (e.g. POST /cache/invalidate/*).
- */
 export async function invalidateContentCache(): Promise<void> {
 	await Promise.all([
 		invalidateCache("articles:*"),
@@ -121,10 +105,6 @@ export async function invalidateContentCache(): Promise<void> {
 	]);
 }
 
-/**
- * Warm the caches after an invalidation so the next API request is fast.
- * Best-effort: logs and swallows errors so watcher callbacks never crash.
- */
 export async function rebuildContentCache(): Promise<void> {
 	const dir = contentDir();
 	try {
@@ -141,7 +121,6 @@ export async function rebuildContentCache(): Promise<void> {
 	}
 }
 
-/** Invalidate + rebuild in one step (file-watcher path). */
 export async function refreshContentCache(): Promise<void> {
 	await invalidateContentCache();
 	await rebuildContentCache();

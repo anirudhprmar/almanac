@@ -25,9 +25,6 @@ import { ENV } from "./env.server";
 import { MCP_ROUTE_PATH, registerMcpRoutes } from "./mcp";
 import { startContentWatcher } from "./watcher";
 
-// Configure cache provider
-// Local clone: CACHE_PROVIDER=memory (default, in-memory Map, no docker/redis needed)
-// Docker: set CACHE_PROVIDER=redis (or USE_REDIS=true) + REDIS_URL=redis://redis:6379
 configureCache({ url: ENV.REDIS_URL, provider: ENV.CACHE_PROVIDER });
 
 if (getCacheProvider() === "redis") {
@@ -71,14 +68,11 @@ app.get("/health", async (c) => {
 	return c.json({
 		status: cache === "up" ? "ok" : "degraded",
 		cache: { provider, status: cache, ready, latencyMs, error },
-		// keep redis key for backwards compat if provider is redis
 		redis: { provider, status: cache, ready, latencyMs, error },
 		env: ENV.NODE_ENV,
 	});
 });
 
-// Demo: cache-aside example (shows getCachedData wiring)
-// GET /cache/demo -> caches timestamp for 60s (memory locally, redis in docker)
 app.get("/cache/demo", async (c) => {
 	const data = await getCachedData(
 		"demo:timestamp",
@@ -91,21 +85,16 @@ app.get("/cache/demo", async (c) => {
 	return c.json({ ...data, _cacheProvider: getCacheProvider() });
 });
 
-// POST /cache/invalidate/:key -> invalidate pattern
 app.post("/cache/invalidate/:key", async (c) => {
 	const key = c.req.param("key");
 	await invalidateCache(key);
 	return c.json({ invalidated: key, provider: getCacheProvider() });
 });
 
-// --- Wiki API (articles, backlinks, graph) ---
-
-// GET /api/meta -> encyclopedia brand { name, pedia }, e.g. { name: "Anirudh", pedia: "Anirudhpedia" }
 app.get("/api/meta", async (c) => {
 	return c.json(await getSiteBrand());
 });
 
-// GET /api/articles -> all articles (newest first)
 app.get("/api/articles", async (c) => {
 	try {
 		return c.json(await getArticles(contentDir()));
@@ -117,7 +106,6 @@ app.get("/api/articles", async (c) => {
 	}
 });
 
-// GET /api/articles/:slug -> article + backlinks
 app.get("/api/articles/:slug", async (c) => {
 	try {
 		const detail = await getArticleDetail(c.req.param("slug"));
@@ -131,15 +119,11 @@ app.get("/api/articles/:slug", async (c) => {
 	}
 });
 
-// GET /api/search/index -> serialized MiniSearch index for client-side search
-// NOTE: register before /api/search/:slug-style routes; kept above /api/search
-// for clarity even though there is no conflicting param route today.
 app.get("/api/search/index", async (c) => {
 	const json = await getSearchIndexJson();
 	return c.json(JSON.parse(json));
 });
 
-// GET /api/search?q=...&limit=10 -> ranked full-text hits { slug, title, description, score, excerpt }
 app.get("/api/search", async (c) => {
 	const q = (c.req.query("q") ?? "").trim().slice(0, 200);
 	const limit = Math.min(
@@ -150,12 +134,10 @@ app.get("/api/search", async (c) => {
 	return c.json(await searchContent(q, limit));
 });
 
-// GET /api/graph -> global wiki graph { nodes, links }
 app.get("/api/graph", async (c) => {
 	return c.json(await getGraphData());
 });
 
-// GET /api/graph/:slug?depth=1 -> local graph around one article
 app.get("/api/graph/:slug", async (c) => {
 	const depth = Math.min(
 		Math.max(Number.parseInt(c.req.query("depth") ?? "1", 10) || 1, 1),
@@ -168,12 +150,8 @@ app.get("/api/graph/:slug", async (c) => {
 	return c.json(graph);
 });
 
-// --- MCP (Model Context Protocol) ---
-// Streamable HTTP endpoint for web MCP clients (Claude / Cursor / ChatGPT).
-// stdio transport lives in ./mcp.ts (`bun run src/mcp.ts` or `almanac mcp`).
 registerMcpRoutes(app);
 
-// MCP discovery: which tools exist and where the stdio entry lives.
 app.get("/mcp/info", async (c) => {
 	const { ALMANAC_MCP_TOOL_NAMES } = await import("./mcp");
 	return c.json({
@@ -184,10 +162,8 @@ app.get("/mcp/info", async (c) => {
 	});
 });
 
-// Keep API in sync with /wiki: on add/change/unlink, invalidate + rebuild caches.
 const contentWatcher = startContentWatcher();
 
-// Graceful shutdown
 const shutdown = async () => {
 	console.log("Shutting down: closing watcher, disconnecting cache...");
 	await contentWatcher

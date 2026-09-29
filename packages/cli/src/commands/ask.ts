@@ -85,7 +85,7 @@ export default defineCommand({
 			});
 		} catch (err) {
 			const msg = err instanceof Error ? err.message : String(err);
-			// No LLM key: degrade to retrieval-only so `ask` still helps.
+
 			if (/no llm api key|opencode cli not found/i.test(msg)) {
 				log(
 					`No LLM configured — showing ranked vault excerpts instead.\n(${msg})\n`,
@@ -126,9 +126,7 @@ export default defineCommand({
 						"Hint: set OPENAI_API_KEY / ANTHROPIC_API_KEY (or --provider opencode) for a synthesized answer.",
 					);
 					return;
-				} catch {
-					// fall through to fatal below
-				}
+				} catch {}
 			}
 			console.error(`almanac: ask failed: ${msg}`);
 			process.exit(1);

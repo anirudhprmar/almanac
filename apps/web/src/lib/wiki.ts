@@ -19,20 +19,16 @@ export const FALLBACK_BRAND: SiteBrand = {
 	pedia: FALLBACK_PEDIA,
 };
 
-/** Encyclopedia brand (`{ name, pedia }`) from the server; Usernamepedia fallback when unreachable. */
 export async function getSiteBrand(): Promise<SiteBrand> {
 	try {
 		const meta = await api<{ name: string; pedia: string }>("/api/meta");
 		if (meta && typeof meta.name === "string" && meta.name.trim()) {
 			return brandOf(meta.name);
 		}
-	} catch {
-		// fall through to the generic brand
-	}
+	} catch {}
 	return { ...FALLBACK_BRAND };
 }
 
-/** Article as returned by the API (dates serialize to ISO strings). */
 type ApiArticle = Omit<Article, "lastModified"> & { lastModified: string };
 
 export type ArticleDetail = {
@@ -77,7 +73,6 @@ function isNotFound(err: unknown): boolean {
 	);
 }
 
-/** All articles, newest first. Empty list when the server is unreachable. */
 export async function getArticles(): Promise<Article[]> {
 	try {
 		const articles = await api<ApiArticle[]>("/api/articles");
@@ -87,7 +82,6 @@ export async function getArticles(): Promise<Article[]> {
 	}
 }
 
-/** Article + backlinks, or null when missing. */
 export async function getArticleDetail(
 	slug: string,
 ): Promise<ArticleDetail | null> {
@@ -106,7 +100,6 @@ export async function getArticleDetail(
 	}
 }
 
-/** Ranked full-text hits for a query. Empty list for blank queries or when the server is unreachable. */
 export async function searchNotes(
 	query: string,
 	limit = 20,
@@ -125,11 +118,6 @@ export async function searchNotes(
 const WIKI_RE = /!?\[\[([^[\]|#]+)?(#[^[\]|]+)?(\|[^[\]]+)?\]\]/g;
 const CODE_RE = /(```[\s\S]*?```|`[^`\n]*`)/g;
 
-/**
- * Rewrite Obsidian wikilinks to standard markdown links for react-markdown.
- * `[[Page|Alias]]` -> `[Alias](/wiki/page)`, `[[Page#H]]` keeps `#h` anchor,
- * `![[embed]]` and broken links degrade to plain text. Code spans untouched.
- */
 export function resolveWikilinks(content: string, articles: Article[]): string {
 	const parts = content.split(CODE_RE);
 	for (let i = 0; i < parts.length; i += 2) {
@@ -144,7 +132,6 @@ export function resolveWikilinks(content: string, articles: Article[]): string {
 					alias ||
 					(target && anchor ? `${target} › ${anchor}` : target || anchor);
 
-				// Same-page anchor: [[#Heading]]
 				if (!target && anchor) return `[${display}](#${slugify(anchor)})`;
 
 				const slug = target ? resolveSlug(target, articles) : null;
@@ -152,7 +139,7 @@ export function resolveWikilinks(content: string, articles: Article[]): string {
 				const href = anchor
 					? `/wiki/${slug}#${slugify(anchor)}`
 					: `/wiki/${slug}`;
-				// Escape brackets in display text so md parsing stays intact
+
 				const safeDisplay = display.replace(/[[\]]/g, "");
 				return `[${safeDisplay}](${href})`;
 			},

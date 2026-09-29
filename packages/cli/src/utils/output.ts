@@ -7,7 +7,6 @@ export function fatal(message: string, exitCode = 1): never {
 	process.exit(exitCode);
 }
 
-/** Truncate a string to `max` chars with an ellipsis. */
 export function truncate(input: string | undefined, max = 80): string {
 	if (!input) return "";
 	const singleLine = input.replace(/\s+/g, " ").trim();

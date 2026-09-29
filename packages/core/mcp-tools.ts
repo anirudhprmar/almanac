@@ -14,9 +14,8 @@ import { type SearchHit, searchArticles } from "./search";
 import { loadPreferencesText } from "./wiki-writer";
 
 export type VaultRef = {
-	/** Absolute wiki/ dir. */
 	contentDir: string;
-	/** Project root (for raw/drafts resolution). Falls back to parent of contentDir. */
+
 	root?: string;
 };
 
@@ -32,7 +31,6 @@ function draftsDirOf(ref: VaultRef): string {
 	return join(rootOf(ref), "drafts");
 }
 
-/** Resolve a user-supplied slug/title/alias to the canonical article slug. */
 export async function resolveSlug(
 	dir: string,
 	input: string,
@@ -176,15 +174,14 @@ export async function askVault(
 }
 
 export type ImportFileInput = {
-	/** Target filename, e.g. "meeting-notes.md" (extension added when missing). */
 	filename: string;
-	/** Raw text/markdown to store. Required unless sourcePath is given. */
+
 	content?: string;
-	/** Absolute path of an existing file to import (copied verbatim). */
+
 	sourcePath?: string;
-	/** Where to store: raw/ (compile input) or drafts/. Defaults to raw. */
+
 	subdir?: "raw" | "drafts";
-	/** Overwrite when the destination exists. Defaults to false. */
+
 	overwrite?: boolean;
 };
 
@@ -203,10 +200,6 @@ function sanitizeFilename(input: string): string {
 	return /\.[a-z0-9]+$/i.test(cleaned) ? cleaned : `${cleaned}.md`;
 }
 
-/**
- * Stage external text into the vault for a later `almanac compile`.
- * Never writes into wiki/ directly — compile owns that dir.
- */
 export async function importFileToVault(
 	ref: VaultRef,
 	input: ImportFileInput,
@@ -249,7 +242,6 @@ export async function importFileToVault(
 			) {
 				throw err;
 			}
-			// Missing file — safe to write.
 		}
 	}
 	await writeFile(dest, text, "utf-8");
@@ -263,7 +255,6 @@ export async function importFileToVault(
 	};
 }
 
-/** Direct article read (no cache tricks) — used by the `ask` CLI fallback. */
 export async function getArticleRaw(
 	dir: string,
 	slugInput: string,

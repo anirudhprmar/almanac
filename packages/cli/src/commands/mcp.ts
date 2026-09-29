@@ -75,7 +75,7 @@ export default defineCommand({
 		console.error(
 			`[almanac-mcp] serving ${dir} on stdio (7 tools). Configure clients with \`almanac mcp --dir "${dir}"\`.`,
 		);
-		// Stay alive until the MCP client closes stdin.
+
 		await new Promise<never>(() => {});
 	},
 });

@@ -13,9 +13,8 @@ import {
 } from "./mcp-tools";
 
 export type AlmanacMcpOptions = VaultRef & {
-	/** Shown in the MCP server info. */
 	serverName?: string;
-	/** Shown in the MCP server info. */
+
 	serverVersion?: string;
 };
 
@@ -59,7 +58,6 @@ function jsonResult(value: unknown) {
 	return textResult(JSON.stringify(value, null, 2));
 }
 
-/** Build a fully-registered Almanac MCP server bound to one vault. */
 export function createAlmanacMcpServer(opts: AlmanacMcpOptions): McpServer {
 	const server = new McpServer(
 		{
@@ -237,7 +235,7 @@ export function createAlmanacMcpServer(opts: AlmanacMcpOptions): McpServer {
 				return jsonResult(result);
 			} catch (err) {
 				const msg = err instanceof Error ? err.message : String(err);
-				// No LLM key: degrade to retrieval-only so agents still get value.
+
 				if (/no llm api key|opencode cli not found/i.test(msg)) {
 					try {
 						const { hits, articlesCount } = await searchVault(
@@ -262,9 +260,7 @@ export function createAlmanacMcpServer(opts: AlmanacMcpOptions): McpServer {
 							articlesCount,
 							hits,
 						});
-					} catch {
-						// fall through to error text
-					}
+					} catch {}
 				}
 				return textResult(`ask_almanac failed: ${msg}`);
 			}

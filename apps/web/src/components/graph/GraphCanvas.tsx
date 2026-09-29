@@ -30,11 +30,11 @@ type HoverState = {
 
 type GraphCanvasProps = {
 	data: GraphData;
-	/** Highlighted node (local graph center). Defaults to none. */
+
 	currentSlug?: string;
-	/** Where a node click navigates. Defaults to /wiki/[slug]. */
+
 	hrefForNode?: (slug: string) => string;
-	/** Override navigation (e.g. open in a panel instead). */
+
 	onSelect?: (slug: string) => void;
 	height?: number;
 };
@@ -69,7 +69,7 @@ export default function GraphCanvas({
 		const ro = new ResizeObserver(() => setWidth(el.clientWidth));
 		ro.observe(el);
 		setWidth(el.clientWidth);
-		// Tracked via listener (not JSX props): feeds the hover tooltip position only.
+
 		const onMove = (e: MouseEvent) => {
 			const rect = el.getBoundingClientRect();
 			mouseRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
@@ -124,7 +124,6 @@ export default function GraphCanvas({
 				ctx.stroke();
 			}
 
-			// Labels for the current node, hubs, and the hovered node
 			if (isCurrent || node.degree >= 3 || hover?.node.id === node.id) {
 				const fontSize = Math.max(11 / globalScale, 3);
 				ctx.font = `${isCurrent ? "600 " : ""}${fontSize}px sans-serif`;

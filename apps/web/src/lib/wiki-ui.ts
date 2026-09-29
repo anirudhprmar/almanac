@@ -6,7 +6,6 @@ export type TocEntry = { id: string; text: string; level: number };
 const HEADING_RE = /^(#{1,4})\s+(.+?)\s*#?\s*$/;
 const CODE_FENCE_RE = /^```/;
 
-/** Extract ## / ### headings from raw markdown for the Contents box. */
 export function buildToc(content: string): TocEntry[] {
 	const entries: TocEntry[] = [];
 	let inCode = false;
@@ -19,7 +18,7 @@ export function buildToc(content: string): TocEntry[] {
 		const m = HEADING_RE.exec(line);
 		if (!m) continue;
 		const level = m[1].length;
-		if (level < 2) continue; // h1 is the article title itself
+		if (level < 2) continue;
 		const text = m[2].replace(/\[([^\]]+)\]\([^)]+\)/g, "$1").trim();
 		if (!text) continue;
 		entries.push({ id: slugify(text), text, level });
@@ -29,7 +28,6 @@ export function buildToc(content: string): TocEntry[] {
 
 const WIKILINK_RE = /\[\[([^[\]|#]+)?(#[^[\]|]+)?(\|[^[\]]+)?\]\]/g;
 
-/** Outgoing [[wikilink]] targets, resolved to slugs when possible. */
 export function extractOutgoing(content: string, articles: Article[]) {
 	const byTitle = new Map(articles.map((a) => [a.title.toLowerCase(), a]));
 	const bySlug = new Map(articles.map((a) => [a.slug, a]));
@@ -47,7 +45,6 @@ export function extractOutgoing(content: string, articles: Article[]) {
 	return [...seen.values()].sort((a, b) => a.title.localeCompare(b.title));
 }
 
-/** Plain-text excerpt for featured-article boxes and search fallbacks. */
 export function excerpt(content: string, maxLen = 320): string {
 	const plain = content
 		.replace(/```[\s\S]*?```/g, " ")
@@ -79,7 +76,6 @@ export function formatWikiDate(d: Date | string): string {
 
 const CATEGORY_KEYS = ["categories", "category", "tags", "tag"];
 
-/** Categories from frontmatter (`categories` / `tags`), else empty. */
 export function articleCategories(article: Article): string[] {
 	const out: string[] = [];
 	for (const key of CATEGORY_KEYS) {
@@ -92,7 +88,6 @@ export function articleCategories(article: Article): string[] {
 	return [...new Set(out)];
 }
 
-/** Scalar frontmatter rows worth showing in the infobox. */
 export function infoboxRows(
 	article: Article,
 ): { label: string; value: string }[] {

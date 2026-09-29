@@ -10,7 +10,6 @@ async function collectMarkdownFiles(dir: string): Promise<string[]> {
 	async function walk(current: string): Promise<void> {
 		const entries = await readdir(current, { withFileTypes: true });
 		for (const entry of entries) {
-			// Skip hidden dirs (e.g. .obsidian), node_modules, and dotfiles
 			if (entry.name.startsWith(".")) continue;
 			if (entry.name === "node_modules") continue;
 			const full = join(current, entry.name);

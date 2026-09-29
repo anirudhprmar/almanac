@@ -6,21 +6,20 @@ import { join, relative } from "node:path";
 export type RawSource = "raw" | "drafts" | "outputs";
 
 export type RawFile = {
-	/** Absolute path on disk. */
 	absPath: string;
-	/** Path relative to its source dir (posix-style). */
+
 	relPath: string;
 	source: RawSource;
 	ext: string;
 	size: number;
 	mtimeMs: number;
-	/** Text content (truncated to maxBytesPerFile when needed). */
+
 	text: string;
-	/** True when the file was cut off at maxBytesPerFile. */
+
 	truncated: boolean;
-	/** True for binary/media files — content is not readable, metadata only. */
+
 	binary: boolean;
-	/** Human-readable reason when binary/skipped. */
+
 	skipReason?: string;
 };
 
@@ -30,7 +29,7 @@ export type ScanOptions = {
 	outputDir: string;
 	includeDrafts?: boolean;
 	includeOutputs?: boolean;
-	/** Max chars read per text file. Defaults to 24_000. */
+
 	maxCharsPerFile?: number;
 };
 
@@ -108,7 +107,6 @@ async function collectFiles(dir: string): Promise<string[]> {
 	return out;
 }
 
-/** sha256 hex of a string (used for incremental change detection). */
 export function hashContent(text: string): string {
 	return createHash("sha256").update(text, "utf-8").digest("hex");
 }
@@ -146,11 +144,7 @@ async function toRawFile(
 		};
 	}
 
-	// Unknown extensions without a text signal: treat small files as text,
-	// large/extensionless binaries as metadata-only.
 	if (ext && !TEXT_EXTS.has(ext)) {
-		// Still try to read: chat exports and notes come in many extensions.
-		// Fall through to the text read; unreadable bytes become skipReason.
 	}
 
 	try {
@@ -183,10 +177,6 @@ async function toRawFile(
 	}
 }
 
-/**
- * Scan raw/drafts/outputs for candidate source material.
- * Missing dirs scan as empty — never throws for absent folders.
- */
 export async function scanRawInputs(opts: ScanOptions): Promise<RawFile[]> {
 	const maxChars = Math.max(
 		1000,
@@ -210,12 +200,10 @@ export async function scanRawInputs(opts: ScanOptions): Promise<RawFile[]> {
 	return out;
 }
 
-/** Stable key for state tracking: `source:relPath`. */
 export function stateKeyFor(file: Pick<RawFile, "source" | "relPath">): string {
 	return `${file.source}:${file.relPath}`;
 }
 
-/** Content fingerprint used for change detection. */
 export function fingerprintFor(file: RawFile): string {
 	if (file.binary)
 		return hashContent(`${file.relPath}|${file.size}|${file.mtimeMs}`);

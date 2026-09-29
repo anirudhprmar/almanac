@@ -5,21 +5,20 @@ import { pathToFileURL } from "node:url";
 import { CONFIG_FILENAMES } from "./find-root.ts";
 
 export type AlmanacConfig = {
-	/** Human-readable vault name (set by `almanac init --name`). */
 	name?: string;
-	/** Markdown vault dir, relative to root. Defaults to "wiki". */
+
 	contentDir?: string;
-	/** Raw imports dir, relative to root. Defaults to "raw". */
+
 	rawDir?: string;
-	/** Drafts dir, relative to root. Defaults to "drafts". */
+
 	draftsDir?: string;
-	/** Build output dir, relative to root. Defaults to "outputs". */
+
 	outputDir?: string;
-	/** Next.js frontend port. Defaults to 3001. */
+
 	webPort?: number;
-	/** Hono server port. Defaults to 3000. */
+
 	serverPort?: number;
-	/** Compile defaults (LLM + source scanning). All optional. */
+
 	compile?: {
 		provider?: string;
 		model?: string;
@@ -32,17 +31,17 @@ export type AlmanacConfig = {
 
 export type ResolvedAlmanacConfig = {
 	name: string;
-	/** Absolute content dir. */
+
 	contentDir: string;
-	/** Absolute raw dir. */
+
 	rawDir: string;
-	/** Absolute drafts dir. */
+
 	draftsDir: string;
-	/** Absolute output dir. */
+
 	outputDir: string;
 	webPort: number;
 	serverPort: number;
-	/** Resolved compile defaults (flags override these). */
+
 	compile: {
 		provider?: string;
 		model?: string;
@@ -56,7 +55,7 @@ export type ResolvedAlmanacConfig = {
 export type LoadedConfig = {
 	root: string;
 	config: ResolvedAlmanacConfig;
-	/** Absolute config path, or null when falling back to defaults. */
+
 	configPath: string | null;
 };
 
@@ -70,7 +69,6 @@ const DEFAULTS = {
 	serverPort: 3000,
 } as const;
 
-/** Candidate config paths: config/almanac.config.* first, then root-level. */
 export function configCandidates(root: string): string[] {
 	const out: string[] = [];
 	for (const scope of ["config", "."]) {
@@ -141,7 +139,7 @@ async function readConfigFile(path: string): Promise<AlmanacConfig | null> {
 			return null;
 		}
 	}
-	// .ts/.js/.mjs — dynamic import (works under Bun; falls back to null).
+
 	try {
 		const mod = (await import(pathToFileURL(path).href)) as unknown;
 		const exported =
@@ -167,10 +165,6 @@ async function readConfigFile(path: string): Promise<AlmanacConfig | null> {
 	}
 }
 
-/**
- * Load the Almanac config for `root`. Missing/unreadable configs fall back
- * to defaults with `configPath: null` — never throws for a missing file.
- */
 export async function loadAlmanacConfig(root: string): Promise<LoadedConfig> {
 	const absolute = resolve(root);
 	for (const candidate of configCandidates(absolute)) {
@@ -189,7 +183,6 @@ export async function loadAlmanacConfig(root: string): Promise<LoadedConfig> {
 	};
 }
 
-/** Absolute content dir, honoring an explicit `--dir` override. */
 export function contentDirFromRoot(
 	config: ResolvedAlmanacConfig,
 	explicitDir?: string,

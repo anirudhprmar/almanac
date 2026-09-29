@@ -79,7 +79,6 @@ export default defineCommand({
 			process.exit(1);
 		}
 
-		// Single-process mode: let turbo orchestrate both apps.
 		if (turbo) {
 			const proc = spawn("bun", ["run", "dev"], {
 				cwd: root,
@@ -107,8 +106,6 @@ export default defineCommand({
 
 		const procs: ChildProcess[] = [];
 		if (runWeb) {
-			// The repo script pins --port 3001; go through next directly
-			// when a custom port was requested.
 			const webArgs =
 				webPort === 3001
 					? ["run", "dev"]
@@ -131,9 +128,7 @@ export default defineCommand({
 			for (const proc of procs) {
 				try {
 					proc.kill(signal);
-				} catch {
-					// Already exited — nothing to stop.
-				}
+				} catch {}
 			}
 		};
 		process.once("SIGINT", () => forward("SIGINT"));

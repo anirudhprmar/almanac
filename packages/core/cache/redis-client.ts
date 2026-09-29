@@ -136,7 +136,6 @@ export async function getCachedData<T>(
 	fetchFn: () => Promise<T>,
 	ttlSeconds = 300,
 ): Promise<T> {
-	// 1. Try cache
 	try {
 		const c = await ensureRedisConnected();
 		const cached = await withTimeout(c.get(key), 1000, `Redis get ${key}`);
@@ -155,10 +154,8 @@ export async function getCachedData<T>(
 		console.warn(`Redis get failed for key "${key}" - bypassing cache`, err);
 	}
 
-	// 2. Fetch fresh
 	const freshData = await fetchFn();
 
-	// 3. Populate cache (best-effort)
 	if (freshData !== null && freshData !== undefined) {
 		try {
 			const c = await ensureRedisConnected();

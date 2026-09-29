@@ -1,7 +1,3 @@
-/**
- * Server-only vault-name lookup (uses node:fs — never import from client
- * components; web code should use `@almanac/core/site-brand` instead).
- */
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
@@ -44,11 +40,6 @@ function nameFromTsFile(
 		.catch(() => null);
 }
 
-/**
- * Read the vault name from an Almanac config file under `root`
- * (`config/almanac.config.*`, then root-level). Never throws — returns null
- * when no config or name is found.
- */
 export async function readSiteName(root: string): Promise<string | null> {
 	for (const scope of ["config", "."]) {
 		for (const file of CONFIG_FILENAMES) {
@@ -63,10 +54,6 @@ export async function readSiteName(root: string): Promise<string | null> {
 	return null;
 }
 
-/**
- * Walk up from `startDir` looking for an Almanac root (a dir containing
- * `config/almanac.config.*`, a root-level config, or a `wiki/` folder).
- */
 export function findSiteRoot(startDir: string, maxDepth = 5): string | null {
 	let current = resolve(startDir);
 	for (let i = 0; i <= maxDepth; i++) {

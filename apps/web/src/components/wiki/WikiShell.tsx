@@ -14,11 +14,8 @@ export type WikiTab = {
 type WikiShellProps = {
 	children: ReactNode;
 	brand: SiteBrand;
-	/** Left namespace tabs (e.g. Article / Talk). */
 	namespaceTabs?: WikiTab[];
-	/** Right view tabs (e.g. Read / Edit / View history). */
 	viewTabs?: WikiTab[];
-	/** Search box default value (used on Special:Search). */
 	searchDefault?: string;
 };
 
@@ -71,7 +68,7 @@ export default function WikiShell({
 
 	return (
 		<div className="wiki-page min-h-svh bg-[#f6f6f6] text-[#202122]">
-			{/* personal tools */}
+			{}
 			<div className="flex items-center justify-end gap-3 px-4 pt-1 text-[#54595d] text-[12px]">
 				<span className="hidden items-center gap-1 sm:flex">
 					<span
@@ -88,7 +85,7 @@ export default function WikiShell({
 			</div>
 
 			<div className="mx-auto flex max-w-[1440px] items-start gap-0 px-0 sm:px-2">
-				{/* left sidebar */}
+				{}
 				<aside className="hidden w-[11em] shrink-0 md:block">
 					<PuzzleLogo pedia={pedia} />
 					<div className="overflow-hidden">
@@ -133,9 +130,9 @@ export default function WikiShell({
 					</div>
 				</aside>
 
-				{/* main column */}
+				{}
 				<div className="min-w-0 flex-1 pb-8">
-					{/* tabs + search */}
+					{}
 					<div className="flex flex-wrap items-end justify-between gap-2 px-3 pt-1 md:hidden">
 						<Link href="/" className="font-serif text-lg">
 							{pedia}
@@ -180,12 +177,12 @@ export default function WikiShell({
 						</div>
 					</div>
 
-					{/* content card */}
+					{}
 					<main className="wiki-content mx-1 border border-[#a7d7f9] bg-white px-4 py-4 shadow-[0_1px_2px_rgba(0,0,0,0.06)] sm:px-6 md:ml-0">
 						{children}
 					</main>
 
-					{/* footer */}
+					{}
 					<footer className="px-4 pt-4 text-[#202122] text-[12px]">
 						<div className="border-[#c8ccd1] border-t pt-3">
 							<p className="mb-2">

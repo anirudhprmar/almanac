@@ -48,7 +48,7 @@ export default async function Home() {
 				From {pedia}, the free encyclopedia
 			</p>
 
-			{/* welcome banner */}
+			{}
 			<div className="mt-3 border border-[#a2a9b1] bg-[#f8f9fa] px-4 py-3 text-center">
 				<p className="font-serif text-[22px]">Welcome to {pedia},</p>
 				<p className="text-[13px]">
@@ -110,7 +110,7 @@ export default async function Home() {
 				</div>
 			) : (
 				<>
-					{/* two-column features */}
+					{}
 					<div className="mt-3 grid gap-2.5 lg:grid-cols-2">
 						<div>
 							<div className="wiki-mp-box" style={{ background: "#f5fffa" }}>
@@ -241,7 +241,7 @@ export default async function Home() {
 						</div>
 					</div>
 
-					{/* contents A-Z */}
+					{}
 					<section id="contents" aria-label="Contents">
 						<h2 className="wiki-h2">Contents</h2>
 						<p className="text-[13px]">
@@ -281,7 +281,7 @@ export default async function Home() {
 						))}
 					</section>
 
-					{/* about / community anchors for sidebar links */}
+					{}
 					<section id="about" aria-label="About">
 						<h2 className="wiki-h2">About {pedia}</h2>
 						<p className="text-[13.5px]">

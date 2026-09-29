@@ -2,14 +2,6 @@ import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { tryFindAlmanacRoot } from "./find-root.ts";
 
-/**
- * Resolve the markdown vault directory.
- *
- * Precedence: `--dir` flag > `CONTENT_DIR` env > `contentDir` from the
- * project config (when readable as JSON) > `wiki/` under the Almanac
- * root found by {@link tryFindAlmanacRoot} > nearest `wiki/` walking up
- * from cwd > `<cwd>/wiki`.
- */
 export function resolveContentDir(explicitDir?: string): string {
 	const fromFlag = explicitDir?.trim();
 	if (fromFlag) return resolve(fromFlag);
@@ -17,7 +9,6 @@ export function resolveContentDir(explicitDir?: string): string {
 	const fromEnv = process.env.CONTENT_DIR?.trim();
 	if (fromEnv) return resolve(fromEnv);
 
-	// Anchor on the project root so vault commands work from any subdir.
 	try {
 		const root = tryFindAlmanacRoot();
 		if (root) {
@@ -26,9 +17,7 @@ export function resolveContentDir(explicitDir?: string): string {
 			const vault = join(root, "wiki");
 			if (existsSync(vault)) return vault;
 		}
-	} catch {
-		// Fall through to the directory walk below.
-	}
+	} catch {}
 
 	let current = resolve(process.cwd());
 	for (let i = 0; i < 6; i++) {
@@ -42,7 +31,6 @@ export function resolveContentDir(explicitDir?: string): string {
 	return resolve(process.cwd(), "wiki");
 }
 
-/** Sync-readable contentDir: only JSON configs (TS needs a runtime import). */
 function readJsonContentDir(root: string): string | null {
 	for (const candidate of [
 		join(root, "config", "almanac.config.json"),
@@ -55,9 +43,7 @@ function readJsonContentDir(root: string): string | null {
 			if (typeof raw.contentDir === "string" && raw.contentDir.trim()) {
 				return resolve(root, raw.contentDir.trim());
 			}
-		} catch {
-			// Missing or unparsable — try the next candidate.
-		}
+		} catch {}
 	}
 	return null;
 }

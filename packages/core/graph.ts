@@ -5,9 +5,9 @@ export type GraphNode = {
 	id: string;
 	title: string;
 	description?: string;
-	/** Number of total connections (in + out). Used for sizing. */
+
 	degree: number;
-	/** True when this is the currently-viewed article in a local graph. */
+
 	isCurrent?: boolean;
 };
 
@@ -21,11 +21,6 @@ export type GraphData = {
 	links: GraphLink[];
 };
 
-/**
- * Build the full wiki graph from articles.
- * Nodes = articles, links = resolved outgoing wikilinks/markdown links.
- * Pure function — no fs, safe to call from Next.js route handlers.
- */
 export function buildGraphData(articles: Article[]): GraphData {
 	const outgoing = buildOutgoingMap(articles);
 	const bySlug = new Map(articles.map((a) => [a.slug, a]));
@@ -54,16 +49,11 @@ export function buildGraphData(articles: Article[]): GraphData {
 		degree: degree.get(a.slug) ?? 0,
 	}));
 
-	// Orphans last so connected notes cluster first
 	nodes.sort((x, y) => y.degree - x.degree);
 
 	return { nodes, links };
 }
 
-/**
- * Local graph: current node + neighbors up to `depth` hops (both directions).
- * Depth 1 = direct backlinks + outgoing. Depth 2 = neighbors-of-neighbors.
- */
 export function getLocalGraph(
 	all: GraphData,
 	slug: string,

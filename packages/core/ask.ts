@@ -21,20 +21,19 @@ export type AskResult = {
 	question: string;
 	answer: string;
 	sources: AskSource[];
-	/** Human-readable model label, e.g. "openai/gpt-4o-mini". */
+
 	model: string;
-	/** How many vault articles were offered as context. */
+
 	contextArticles: number;
 };
 
 export type AskOptions = {
-	/** Absolute vault dir (wiki/). Defaults to process.cwd()/wiki resolution by caller. */
 	dir: string;
-	/** Max context articles (1-10). Defaults to 5. */
+
 	limit?: number;
-	/** LLM overrides (provider/model/baseUrl/apiKey/workdir). */
+
 	llm?: LlmOverrides;
-	/** Max chars per article in the prompt. Defaults to 4000. */
+
 	maxCharsPerArticle?: number;
 };
 
@@ -90,12 +89,6 @@ export function buildAskUserPrompt(
 	].join("\n");
 }
 
-/**
- * Retrieve-then-answer over the vault.
- * Retrieval is pure MiniSearch (no LLM needed); generation calls the
- * configured LLM and expects STRICT JSON { answer, sources }.
- * Throws when no LLM is configured or the vault is unreadable.
- */
 export async function askAlmanac(
 	question: string,
 	opts: AskOptions,
@@ -151,9 +144,7 @@ export async function askAlmanac(
 				.filter(Boolean)
 				.slice(0, limit);
 		}
-	} catch {
-		// Non-JSON reply (e.g. opencode provider prose) — use as-is.
-	}
+	} catch {}
 
 	const hitBySlug = new Map(hits.map((h) => [h.slug, h]));
 	const sources: AskSource[] = (
@@ -169,7 +160,6 @@ export async function askAlmanac(
 			excerpt: h.excerpt,
 		}));
 
-	// Always include retrieved hits even if the LLM cited nothing.
 	if (sources.length === 0) {
 		for (const h of hits) {
 			sources.push({
@@ -195,7 +185,6 @@ export async function askAlmanac(
 	};
 }
 
-/** Lightweight retrieval-only answer (no LLM): ranked hits + excerpts. */
 export async function retrieveForQuestion(
 	dir: string,
 	question: string,

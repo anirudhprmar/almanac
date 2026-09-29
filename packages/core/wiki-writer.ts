@@ -50,10 +50,6 @@ function sanitizePlan(
 	return { slug, title };
 }
 
-/**
- * Write planned articles to wiki/<slug>.md with frontmatter.
- * Idempotent: files with identical content are left untouched (unchanged).
- */
 export async function writePlannedArticles(
 	wikiDir: string,
 	plans: PlannedArticle[],
@@ -109,11 +105,6 @@ export async function writePlannedArticles(
 	return out;
 }
 
-/**
- * Rebuild wiki/index.md as the system-owned master catalog.
- * Groups articles by category so the graph stays discoverable.
- * Idempotent — rewrites only when content differs.
- */
 export async function rebuildIndexPage(wikiDir: string): Promise<{
 	path: string;
 	changed: boolean;
@@ -190,7 +181,6 @@ export async function rebuildIndexPage(wikiDir: string): Promise<{
 	return { path, changed: true, count: others.length };
 }
 
-/** Light lint pass: duplicates, broken links, orphans, missing descriptions. */
 export function lintArticles(articles: Article[]): {
 	issues: LintIssue[];
 	orphans: string[];
@@ -274,12 +264,11 @@ export function lintArticles(articles: Article[]): {
 	return { issues, orphans, broken };
 }
 
-/** Read preferences text (wiki/preferences.md) — never throws, may be empty. */
 export async function loadPreferencesText(wikiDir: string): Promise<string> {
 	for (const name of ["preferences.md", "Preferences.md"]) {
 		try {
 			const raw = await readFile(join(wikiDir, name), "utf-8");
-			// Strip frontmatter title line for a cleaner prompt signal.
+
 			return raw.replace(/^---[\s\S]*?---\s*/, "").trim();
 		} catch {}
 	}

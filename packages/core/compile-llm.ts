@@ -11,7 +11,7 @@ export type LlmConfig = {
 	model: string;
 	baseUrl: string;
 	apiKey: string;
-	/** Working directory for subprocess providers (opencode runs here). */
+
 	workdir: string;
 };
 
@@ -47,13 +47,6 @@ function normalizeProvider(value: string): LlmProvider | null {
 	return null;
 }
 
-/**
- * Resolve LLM config from explicit overrides -> compile config -> env.
- * Supports OpenAI-compatible endpoints (OpenAI, OpenRouter, Ollama, LM Studio…),
- * the Anthropic Messages API, and the local OpenCode CLI (`opencode run`,
- * which reuses your OpenCode auth and default model — no API key needed).
- * No network calls — pure resolution.
- */
 export function resolveLlmConfig(overrides: LlmOverrides = {}): LlmConfig {
 	const envProvider =
 		clean(process.env.ALMANAC_LLM_PROVIDER) || clean(process.env.LLM_PROVIDER);
@@ -67,14 +60,11 @@ export function resolveLlmConfig(overrides: LlmOverrides = {}): LlmConfig {
 		clean(process.env.OPENAI_API_KEY);
 	const anthropicKey = clean(process.env.ANTHROPIC_API_KEY);
 
-	// Auto-detect when no explicit provider: prefer whichever key exists.
 	let resolved: LlmProvider = provider ?? "openai";
 	if (!provider) {
 		if (!openaiKey && anthropicKey) resolved = "anthropic";
 	}
 
-	// opencode uses its own default model (opencode.json) unless overridden
-	// with provider/model form, e.g. ALMANAC_LLM_MODEL=anthropic/claude-sonnet-4-5.
 	const model =
 		clean(overrides.model) ||
 		clean(process.env.ALMANAC_LLM_MODEL) ||
@@ -103,10 +93,6 @@ export function hasLlmKey(config: LlmConfig): boolean {
 	return config.apiKey.length > 0;
 }
 
-/**
- * True when callLlm can run: API providers need a key, while the opencode
- * provider authenticates via the OpenCode CLI itself (no key needed).
- */
 export function canCallLlm(config: LlmConfig): boolean {
 	return config.provider === "opencode" || hasLlmKey(config);
 }
@@ -212,21 +198,10 @@ async function callAnthropic(
 function opencodeTimeoutMs(): number {
 	const raw = Number.parseInt(clean(process.env.ALMANAC_LLM_TIMEOUT_MS), 10);
 	if (Number.isFinite(raw) && raw >= 5_000 && raw <= 3_600_000) return raw;
-	// Agent runs can take a while (model + tool calls).
+
 	return 600_000;
 }
 
-/**
- * Run the local OpenCode CLI non-interactively (`opencode run`).
- * Auth and the default model come from your OpenCode setup — no API key
- * needed. Returns the agent's final response text (parseLlmJson extracts
- * the JSON contract from it).
- *
- * The brief goes through a temp file (`--file`) rather than argv so long
- * prompts never hit command-line length limits or shell-metacharacter
- * restrictions (notably Node's refusal to pass such args to .cmd shims
- * on Windows).
- */
 function callOpencode(
 	system: string,
 	user: string,
@@ -300,7 +275,6 @@ function runOpencode(args: string[], config: LlmConfig): Promise<string> {
 	});
 }
 
-/** Call the configured LLM. Throws when no API key is set or the request fails. */
 export async function callLlm(
 	system: string,
 	user: string,
@@ -320,7 +294,6 @@ export async function callLlm(
 	return callOpenAI(system, user, config);
 }
 
-/** Extract a JSON value from an LLM response (handles ```json fences). */
 export function parseLlmJson<T = unknown>(text: string): T {
 	const trimmed = text.trim();
 	const fence = /```(?:json)?\s*([\s\S]*?)\s*```/i.exec(trimmed);
@@ -328,7 +301,6 @@ export function parseLlmJson<T = unknown>(text: string): T {
 	try {
 		return JSON.parse(candidate) as T;
 	} catch {
-		// Fall back: largest {...} or [...] window in the response.
 		const startObj = candidate.indexOf("{");
 		const startArr = candidate.indexOf("[");
 		const starts = [startObj, startArr]

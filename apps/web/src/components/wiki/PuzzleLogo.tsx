@@ -3,10 +3,6 @@
 import { splitPedia } from "@almanac/core/site-brand";
 import Link from "next/link";
 
-/**
- * Approximate Wikipedia puzzle-globe mark, drawn inline so no image
- * asset is needed. Paired with the <Name>pedia wordmark in the sidebar.
- */
 export default function PuzzleLogo({
 	pedia,
 	compact = false,
@@ -37,7 +33,7 @@ export default function PuzzleLogo({
 					stroke="#a7d7f9"
 					strokeWidth="3"
 				/>
-				{/* puzzle seams */}
+				{}
 				<g stroke="#a7a7a7" strokeWidth="1.6" fill="none">
 					<path d="M8 60 H112" />
 					<path d="M60 8 V112" />
@@ -46,13 +42,13 @@ export default function PuzzleLogo({
 					<path d="M22 34 Q60 46 98 34" />
 					<path d="M22 86 Q60 74 98 86" />
 				</g>
-				{/* puzzle tabs */}
+				{}
 				<g fill="#fff" stroke="#72777d" strokeWidth="1.6">
 					<rect x="30" y="22" width="18" height="14" rx="2" />
 					<rect x="72" y="46" width="18" height="14" rx="2" />
 					<rect x="44" y="72" width="18" height="14" rx="2" />
 				</g>
-				{/* glyphs */}
+				{}
 				<g
 					fontSize="13"
 					textAnchor="middle"
@@ -72,7 +68,7 @@ export default function PuzzleLogo({
 						π
 					</text>
 				</g>
-				{/* missing piece */}
+				{}
 				<path
 					d="M88 20 l14 -8 l4 14 l-14 8 z"
 					fill="#f6f6f6"

@@ -108,7 +108,6 @@ export default defineCommand({
 		const empty = raw.empty === true;
 		const asJson = raw.json === true;
 
-		// Refuse when the target already is (or sits inside) an Almanac.
 		const existing = tryFindAlmanacRoot(target);
 		if (existing && !force) {
 			console.error(

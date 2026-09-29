@@ -49,9 +49,7 @@ export async function parseMarkdown(filePath: string): Promise<Markdown> {
 	try {
 		const st = await stat(filePath);
 		lastModified = st.mtime;
-	} catch {
-		// keep default
-	}
+	} catch {}
 
 	return {
 		title,
