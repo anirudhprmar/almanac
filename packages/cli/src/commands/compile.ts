@@ -138,6 +138,18 @@ export default defineCommand({
 			description: "LLM base URL override (OpenAI-compatible or Anthropic)",
 			valueHint: "url",
 		},
+		agent: {
+			type: "string",
+			description:
+				"OpenCode agent override, e.g. a lean no-tools agent (opencode provider only)",
+			valueHint: "agent",
+		},
+		attach: {
+			type: "string",
+			description:
+				"Attach to a warm opencode server (e.g. http://localhost:4096) to skip cold boot per batch",
+			valueHint: "url",
+		},
 		drafts: {
 			type: "boolean",
 			description:
@@ -254,6 +266,8 @@ export default defineCommand({
 			model: strFlag(raw.model) ?? config.compile.model,
 			baseUrl: strFlag(raw["base-url"]) ?? config.compile.baseUrl,
 			workdir: root,
+			agent: strFlag(raw.agent),
+			server: strFlag(raw.attach),
 		});
 		const llmAvailable = canCallLlm(llmConfig);
 		const willCallLlm =
@@ -337,7 +351,9 @@ export default defineCommand({
 					batchTotal: batches.length,
 				});
 				try {
+					const started = Date.now();
 					const rawOut = await callLlm(system, user, llmConfig);
+					const elapsed = ((Date.now() - started) / 1000).toFixed(0);
 					llmUsed = true;
 					const parsed = parseLlmJson<CompilePlan>(rawOut);
 					if (!isValidPlan(parsed)) {
@@ -358,8 +374,19 @@ export default defineCommand({
 					const created = results.filter((r) => r.status === "created").length;
 					const updated = results.filter((r) => r.status === "updated").length;
 					log(
-						`  batch ${idx}/${batches.length}: +${created} created, ~${updated} updated`,
+						`  batch ${idx}/${batches.length}: +${created} created, ~${updated} updated (${elapsed}s)`,
 					);
+					if (
+						Number(elapsed) > 90 &&
+						llmConfig.provider === "opencode" &&
+						!llmConfig.server
+					) {
+						log(
+							"  tip: batches are slow mostly due to opencode cold boot. " +
+								"Run `opencode serve` once in another terminal, then add " +
+								"`--attach http://localhost:4096` (or set ALMANAC_OPENCODE_SERVER) to reuse it.",
+						);
+					}
 				} catch (err) {
 					llmError = err instanceof Error ? err.message : String(err);
 					console.error(`  batch ${idx}/${batches.length} failed: ${llmError}`);

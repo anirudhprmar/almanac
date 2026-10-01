@@ -11,8 +11,12 @@ export type LlmConfig = {
 	model: string;
 	baseUrl: string;
 	apiKey: string;
-
+	/** Working directory for subprocess providers (opencode runs here). */
 	workdir: string;
+	/** OpenCode agent to use (passed as `opencode run --agent`). */
+	agent: string;
+	/** OpenCode server URL to attach to (avoids cold boot per run). */
+	server: string;
 };
 
 export type LlmOverrides = {
@@ -21,6 +25,8 @@ export type LlmOverrides = {
 	baseUrl?: string;
 	apiKey?: string;
 	workdir?: string;
+	agent?: string;
+	server?: string;
 };
 
 const OPENAI_DEFAULT_MODEL = "gpt-4o-mini";
@@ -86,7 +92,15 @@ export function resolveLlmConfig(overrides: LlmOverrides = {}): LlmConfig {
 
 	const workdir = overrides.workdir?.trim() || process.cwd();
 
-	return { provider: resolved, model, baseUrl, apiKey, workdir };
+	const agent =
+		clean(overrides.agent) || clean(process.env.ALMANAC_OPENCODE_AGENT);
+
+	// Attach to a warm `opencode serve` instance to skip MCP cold boot per run:
+	// start one with `opencode serve`, then reuse its URL here.
+	const server =
+		clean(overrides.server) || clean(process.env.ALMANAC_OPENCODE_SERVER);
+
+	return { provider: resolved, model, baseUrl, apiKey, workdir, agent, server };
 }
 
 export function hasLlmKey(config: LlmConfig): boolean {
@@ -99,7 +113,13 @@ export function canCallLlm(config: LlmConfig): boolean {
 
 export function describeLlmConfig(config: LlmConfig): string {
 	if (config.provider === "opencode") {
-		return `opencode/${config.model || "default-model"} (CLI in ${config.workdir})`;
+		const extras = [
+			config.agent ? `agent ${config.agent}` : "",
+			config.server ? `attached to ${config.server}` : "cold boot",
+		]
+			.filter(Boolean)
+			.join(", ");
+		return `opencode/${config.model || "default-model"} (${extras})`;
 	}
 	const keyState = hasLlmKey(config) ? "key set" : "NO KEY";
 	return `${config.provider}/${config.model} (${config.baseUrl}, ${keyState})`;
@@ -227,7 +247,9 @@ function callOpencode(
 	// NOTE: `run --file` accepts multiple files, so it must come last —
 	// otherwise it swallows the message text as another file path.
 	const args = ["run"];
+	if (config.server) args.push("--attach", config.server);
 	if (config.model) args.push("--model", config.model);
+	if (config.agent) args.push("--agent", config.agent);
 	args.push(message, "--file", briefPath);
 	return (async () => {
 		await writeFile(briefPath, brief, "utf-8");
