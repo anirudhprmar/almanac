@@ -224,9 +224,11 @@ function callOpencode(
 	const message =
 		"Read the attached compile brief and follow it exactly. " +
 		"Your entire reply must be the STRICT JSON it specifies.";
+	// NOTE: `run --file` accepts multiple files, so it must come last —
+	// otherwise it swallows the message text as another file path.
 	const args = ["run"];
 	if (config.model) args.push("--model", config.model);
-	args.push("--file", briefPath, message);
+	args.push(message, "--file", briefPath);
 	return (async () => {
 		await writeFile(briefPath, brief, "utf-8");
 		try {
