@@ -20,6 +20,9 @@ export type RawFile = {
 
 	binary: boolean;
 
+	/** Image file that can be ingested via LLM vision extraction. */
+	image?: boolean;
+
 	skipReason?: string;
 };
 
@@ -45,6 +48,16 @@ const TEXT_EXTS = new Set([
 	".yml",
 	".html",
 	".htm",
+]);
+
+const IMAGE_EXTS = new Set([
+	".png",
+	".jpg",
+	".jpeg",
+	".gif",
+	".bmp",
+	".webp",
+	".svg",
 ]);
 
 const BINARY_EXTS = new Set([
@@ -130,6 +143,21 @@ async function toRawFile(
 	const mtimeMs = st.mtimeMs;
 
 	if (BINARY_EXTS.has(ext)) {
+		if (IMAGE_EXTS.has(ext)) {
+			return {
+				absPath,
+				relPath,
+				source,
+				ext,
+				size,
+				mtimeMs,
+				text: "",
+				truncated: false,
+				binary: true,
+				image: true,
+				skipReason: undefined,
+			};
+		}
 		return {
 			absPath,
 			relPath,

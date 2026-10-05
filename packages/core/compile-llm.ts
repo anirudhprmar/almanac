@@ -1,7 +1,7 @@
-import { execFile } from "node:child_process";
+import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { unlink, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { existsSync } from "node:fs";
+import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 export type LlmProvider = "openai" | "anthropic" | "opencode";
@@ -215,6 +215,19 @@ async function callAnthropic(
 	return text;
 }
 
+function opencodeBin(): string {
+	if (process.platform !== "win32") return "opencode";
+	const base = join(
+		process.env.APPDATA ?? "",
+		"npm",
+		"node_modules",
+		"opencode-ai",
+	);
+	const primary = join(base, "bin", "opencode.exe");
+	if (existsSync(primary)) return primary;
+	return "opencode.cmd";
+}
+
 function opencodeTimeoutMs(): number {
 	const raw = Number.parseInt(clean(process.env.ALMANAC_LLM_TIMEOUT_MS), 10);
 	if (Number.isFinite(raw) && raw >= 5_000 && raw <= 3_600_000) return raw;
@@ -227,9 +240,10 @@ function callOpencode(
 	user: string,
 	config: LlmConfig,
 ): Promise<string> {
+	const briefDir = join(config.workdir, ".almanac", "tmp");
 	const briefPath = join(
-		tmpdir(),
-		`almanac-compile-${randomBytes(8).toString("hex")}.md`,
+		briefDir,
+		`compile-${randomBytes(8).toString("hex")}.md`,
 	);
 	const brief = [
 		"# Compile brief (read fully and follow exactly)",
@@ -252,6 +266,7 @@ function callOpencode(
 	if (config.agent) args.push("--agent", config.agent);
 	args.push(message, "--file", briefPath);
 	return (async () => {
+		await mkdir(briefDir, { recursive: true });
 		await writeFile(briefPath, brief, "utf-8");
 		try {
 			return await runOpencode(args, config);
@@ -263,40 +278,185 @@ function callOpencode(
 
 function runOpencode(args: string[], config: LlmConfig): Promise<string> {
 	return new Promise((resolve, reject) => {
-		execFile(
-			"opencode",
-			args,
-			{
-				cwd: config.workdir,
-				timeout: opencodeTimeoutMs(),
-				maxBuffer: 10 * 1024 * 1024,
-				windowsHide: true,
-			},
-			(err, stdout, stderr) => {
-				if (err) {
-					if ((err as NodeJS.ErrnoException).code === "ENOENT") {
-						reject(
-							new Error(
-								"opencode CLI not found on PATH — install it from https://opencode.ai (npm i -g opencode-ai).",
-							),
-						);
-						return;
-					}
-					const tail = String(stderr || err.message)
-						.trim()
-						.slice(-800);
-					reject(new Error(`opencode run failed: ${tail || err.message}`));
-					return;
-				}
-				const text = String(stdout ?? "").trim();
-				if (!text) {
-					reject(new Error("opencode run returned empty output"));
-					return;
-				}
-				resolve(text);
-			},
-		);
+		const child = spawn(opencodeBin(), args, {
+			cwd: config.workdir,
+			maxBuffer: 10 * 1024 * 1024,
+			windowsHide: true,
+			stdio: ["ignore", "pipe", "pipe"],
+		});
+		const timer = setTimeout(() => {
+			child.kill();
+			reject(new Error("opencode run timed out"));
+		}, opencodeTimeoutMs());
+		let stdout = "";
+		let stderr = "";
+		child.stdout?.on("data", (d) => {
+			if (stdout.length < 10 * 1024 * 1024) stdout += d;
+		});
+		child.stderr?.on("data", (d) => {
+			if (stderr.length < 10 * 1024 * 1024) stderr += d;
+		});
+		child.on("error", (err) => {
+			clearTimeout(timer);
+			if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+				reject(
+					new Error(
+						"opencode CLI not found on PATH — install it from https://opencode.ai (npm i -g opencode-ai).",
+					),
+				);
+				return;
+			}
+			reject(new Error(`opencode run failed: ${err.message}`));
+		});
+		child.on("close", (code) => {
+			clearTimeout(timer);
+			if (code !== 0) {
+				const tail = String(stderr || `exit code ${code}`)
+					.trim()
+					.slice(-800);
+				reject(new Error(`opencode run failed: ${tail}`));
+				return;
+			}
+			const text = String(stdout ?? "").trim();
+			if (!text) {
+				reject(new Error("opencode run returned empty output"));
+				return;
+			}
+			resolve(text);
+		});
 	});
+}
+
+const IMAGE_MEDIA_TYPES: Record<string, string> = {
+	".png": "image/png",
+	".jpg": "image/jpeg",
+	".jpeg": "image/jpeg",
+	".gif": "image/gif",
+	".bmp": "image/bmp",
+	".webp": "image/webp",
+	".svg": "image/svg+xml",
+};
+
+export const IMAGE_EXTENSIONS = new Set(Object.keys(IMAGE_MEDIA_TYPES));
+
+const IMAGE_EXTRACTION_PROMPT =
+	"You are extracting knowledge for a personal wiki. Analyze the attached image and respond with Markdown ONLY:\n" +
+	"- Transcribe all visible text exactly.\n" +
+	"- Describe diagrams, charts, screenshots, or scenes concisely.\n" +
+	"- List the key facts, entities, dates, and claims worth remembering.\n" +
+	"- One-line summary at the top: a good article title candidate.\n" +
+	"No preamble, no JSON, no fences — just the Markdown.";
+
+export async function extractImageText(
+	imagePath: string,
+	ext: string,
+	config: LlmConfig,
+): Promise<string> {
+	if (config.provider === "opencode") {
+		const args = ["run"];
+		if (config.server) args.push("--attach", config.server);
+		if (config.model) args.push("--model", config.model);
+		if (config.agent) args.push("--agent", config.agent);
+		args.push(IMAGE_EXTRACTION_PROMPT, "--file", imagePath);
+		return runOpencode(args, config);
+	}
+	const mediaType = IMAGE_MEDIA_TYPES[ext.toLowerCase()] ?? "image/png";
+	const buffer = await readFile(imagePath);
+	const base64 = buffer.toString("base64");
+	if (!hasLlmKey(config)) {
+		throw new Error(
+			"No LLM API key found for image extraction. Set OPENAI_API_KEY / ANTHROPIC_API_KEY, or use --provider opencode.",
+		);
+	}
+	if (config.provider === "anthropic") {
+		const url = `${config.baseUrl.replace(/\/$/, "")}/messages`;
+		const res = await fetchWithTimeout(url, {
+			method: "POST",
+			headers: {
+				"content-type": "application/json",
+				"x-api-key": config.apiKey,
+				"anthropic-version": "2023-06-01",
+			},
+			body: JSON.stringify({
+				model: config.model,
+				max_tokens: 4096,
+				temperature: 0.2,
+				system: "You extract knowledge from images for a personal wiki.",
+				messages: [
+					{
+						role: "user",
+						content: [
+							{
+								type: "image",
+								source: { type: "base64", media_type: mediaType, data: base64 },
+							},
+							{ type: "text", text: IMAGE_EXTRACTION_PROMPT },
+						],
+					},
+				],
+			}),
+		});
+		if (!res.ok) {
+			const body = await res.text().catch(() => "");
+			throw new Error(
+				`Image extraction failed (${res.status} ${res.statusText}) at ${url}: ${body.slice(0, 500)}`,
+			);
+		}
+		const data = (await res.json()) as {
+			content?: { type?: string; text?: string }[];
+		};
+		const text = data.content
+			?.filter((b) => b.type === "text" && b.text)
+			.map((b) => b.text as string)
+			.join("\n");
+		if (!text)
+			throw new Error("LLM returned an empty image description (Anthropic)");
+		return text;
+	}
+	const url = `${config.baseUrl.replace(/\/$/, "")}/chat/completions`;
+	const res = await fetchWithTimeout(url, {
+		method: "POST",
+		headers: {
+			"content-type": "application/json",
+			authorization: `Bearer ${config.apiKey}`,
+		},
+		body: JSON.stringify({
+			model: config.model,
+			temperature: 0.2,
+			messages: [
+				{
+					role: "system",
+					content: "You extract knowledge from images for a personal wiki.",
+				},
+				{
+					role: "user",
+					content: [
+						{ type: "text", text: IMAGE_EXTRACTION_PROMPT },
+						{
+							type: "image_url",
+							image_url: { url: `data:${mediaType};base64,${base64}` },
+						},
+					],
+				},
+			],
+		}),
+	});
+	if (!res.ok) {
+		const body = await res.text().catch(() => "");
+		throw new Error(
+			`Image extraction failed (${res.status} ${res.statusText}) at ${url}: ${body.slice(0, 500)}`,
+		);
+	}
+	const data = (await res.json()) as {
+		choices?: { message?: { content?: string } }[];
+	};
+	const content = data.choices?.[0]?.message?.content;
+	if (!content || typeof content !== "string") {
+		throw new Error(
+			"LLM returned an empty image description (OpenAI-compatible)",
+		);
+	}
+	return content;
 }
 
 export async function callLlm(

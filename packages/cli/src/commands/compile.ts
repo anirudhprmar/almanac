@@ -6,6 +6,7 @@ import {
 	callLlm,
 	canCallLlm,
 	describeLlmConfig,
+	extractImageText,
 	parseLlmJson,
 	resolveLlmConfig,
 } from "@almanac/core/compile-llm";
@@ -258,7 +259,12 @@ export default defineCommand({
 		const selection = full
 			? { changed: inputs, unchanged: [] as RawFile[] }
 			: selectChangedFiles(inputs, state, hashes);
-		const binaries = selection.changed.filter((f) => f.binary);
+		const images = selection.changed.filter(
+			(f) => f.binary && f.image === true,
+		);
+		const binaries = selection.changed.filter(
+			(f) => f.binary && f.image !== true,
+		);
 		const processable = selection.changed.filter((f) => !f.binary);
 
 		const llmConfig = resolveLlmConfig({
@@ -271,7 +277,42 @@ export default defineCommand({
 		});
 		const llmAvailable = canCallLlm(llmConfig);
 		const willCallLlm =
-			!dryRun && !artifactsOnly && processable.length > 0 && llmAvailable;
+			!dryRun &&
+			!artifactsOnly &&
+			(processable.length > 0 || images.length > 0) &&
+			llmAvailable;
+
+		if (willCallLlm && images.length > 0) {
+			log(`Extracting text from ${images.length} image(s)…`);
+			for (const img of images) {
+				try {
+					const started = Date.now();
+					const text = await extractImageText(img.absPath, img.ext, llmConfig);
+					const elapsed = ((Date.now() - started) / 1000).toFixed(0);
+					log(`  extracted ${img.source}:${img.relPath} (${elapsed}s)`);
+					processable.push({
+						...img,
+						text,
+						binary: false,
+						image: false,
+						truncated: false,
+						skipReason: undefined,
+					});
+				} catch (err) {
+					const msg = err instanceof Error ? err.message : String(err);
+					console.warn(`  image extraction failed for ${img.relPath}: ${msg}`);
+					binaries.push({
+						...img,
+						skipReason: `Image extraction failed: ${msg}`,
+					});
+				}
+			}
+		} else if (images.length > 0 && !llmAvailable && !artifactsOnly) {
+			console.warn(
+				`almanac: ${images.length} image(s) skipped — no LLM configured to extract text.`,
+			);
+			binaries.push(...images);
+		}
 
 		if (dryRun) {
 			const plan = {
