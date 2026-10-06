@@ -1,3 +1,3 @@
 {
-  "extends": "@almanac/config/tsconfig.base.json"
+	"extends": "@almanac/config/tsconfig.base.json"
 }

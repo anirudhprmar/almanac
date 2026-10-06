@@ -71,13 +71,12 @@
       },
     },
     "packages/cli": {
-      "name": "@almanac/cli",
-      "version": "0.0.0",
+      "name": "@almanac-cli/almanac",
+      "version": "0.1.0",
       "bin": {
         "almanac": "./dist/index.js",
       },
       "dependencies": {
-        "@almanac/core": "workspace:*",
         "@modelcontextprotocol/sdk": "^1.31.0",
         "citty": "^0.1.6",
       },
@@ -157,7 +156,7 @@
   "packages": {
     "@alloc/quick-lru": ["@alloc/quick-lru@5.3.0", "", {}, "sha512-U4+70Pc5ZS9osnCBCE5Jha/ciHM+Yp+CNMNC/7HvYbNRk1Ldd+f7qO65W5qfhu/TCv+/ozljlXXe9Nj8419DMA=="],
 
-    "@almanac/cli": ["@almanac/cli@workspace:packages/cli"],
+    "@almanac-cli/almanac": ["@almanac-cli/almanac@workspace:packages/cli"],
 
     "@almanac/config": ["@almanac/config@workspace:packages/config"],
 

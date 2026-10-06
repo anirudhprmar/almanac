@@ -1,13 +1,13 @@
 {
-  "extends": "@almanac/config/tsconfig.base.json",
-  "compilerOptions": {
-    "noEmit": true,
-    "types": ["bun", "node"],
-    "lib": ["ESNext", "DOM"],
-    "paths": {
-      "@/*": ["./src/*"]
-    },
-    "jsx": "react-jsx",
-    "jsxImportSource": "hono/jsx"
-  }
+	"extends": "@almanac/config/tsconfig.base.json",
+	"compilerOptions": {
+		"noEmit": true,
+		"types": ["bun", "node"],
+		"lib": ["ESNext", "DOM"],
+		"paths": {
+			"@/*": ["./src/*"]
+		},
+		"jsx": "react-jsx",
+		"jsxImportSource": "hono/jsx"
+	}
 }
